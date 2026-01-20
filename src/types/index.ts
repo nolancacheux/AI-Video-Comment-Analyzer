@@ -5,10 +5,16 @@ export type AnalysisStage =
   | "fetching_metadata"
   | "extracting_comments"
   | "analyzing_sentiment"
+  | "analyzing_aspects"
   | "detecting_topics"
   | "generating_insights"
   | "complete"
   | "error";
+
+// ABSA (Aspect-Based Sentiment Analysis) Types
+export type AspectType = "content" | "audio" | "production" | "pacing" | "presenter";
+export type RecommendationPriority = "critical" | "high" | "medium" | "low";
+export type RecommendationType = "improve" | "maintain" | "investigate" | "celebrate";
 
 export interface Video {
   id: string;
@@ -61,6 +67,45 @@ export interface MLMetadata {
   confidence_distribution: number[];
 }
 
+// ABSA Interfaces
+export interface AspectStats {
+  aspect: AspectType;
+  mention_count: number;
+  mention_percentage: number;
+  avg_confidence: number;
+  positive_count: number;
+  negative_count: number;
+  neutral_count: number;
+  sentiment_score: number; // -1 to 1 scale
+}
+
+export interface ABSARecommendation {
+  aspect: AspectType;
+  priority: RecommendationPriority;
+  rec_type: RecommendationType;
+  title: string;
+  description: string;
+  evidence: string;
+  action_items: string[];
+}
+
+export interface HealthBreakdown {
+  overall_score: number;
+  aspect_scores: Record<AspectType, number>;
+  trend: "improving" | "stable" | "declining";
+  strengths: AspectType[];
+  weaknesses: AspectType[];
+}
+
+export interface ABSAResult {
+  total_comments_analyzed: number;
+  aspect_stats: Record<AspectType, AspectStats>;
+  dominant_aspects: AspectType[];
+  health: HealthBreakdown;
+  recommendations: ABSARecommendation[];
+  summary: string;
+}
+
 export interface AnalysisResult {
   id: number;
   video: Video;
@@ -70,6 +115,7 @@ export interface AnalysisResult {
   topics: Topic[];
   recommendations: string[];
   ml_metadata?: MLMetadata;
+  absa?: ABSAResult;
 }
 
 export interface ProgressEvent {
@@ -94,6 +140,9 @@ export interface ProgressEvent {
     ml_processing_time_seconds?: number;
     ml_total_tokens?: number;
     ml_comments_per_second?: number;
+    // ABSA metrics
+    absa_health_score?: number;
+    absa_dominant_aspects?: string[];
   };
 }
 
