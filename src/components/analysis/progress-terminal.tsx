@@ -2,51 +2,74 @@
 
 import * as React from "react";
 import {
-  Terminal,
+  Link,
+  Film,
+  MessageSquare,
+  Brain,
+  Tags,
+  Sparkles,
   CheckCircle2,
-  Circle,
   Loader2,
-  AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import type { AnalysisStage, ProgressEvent } from "@/types";
+import type { AnalysisStage } from "@/types";
 
 interface ProgressTerminalProps {
   currentStage: AnalysisStage;
   progress: number;
-  logs: ProgressEvent[];
+  logs: unknown[];
   videoTitle?: string;
   commentsFound?: number;
   commentsAnalyzed?: number;
 }
 
-const STAGES: { id: AnalysisStage; label: string; icon: string }[] = [
-  { id: "validating", label: "Validating URL", icon: "link" },
-  { id: "fetching_metadata", label: "Fetching Metadata", icon: "film" },
-  { id: "extracting_comments", label: "Extracting Comments", icon: "message-square" },
-  { id: "analyzing_sentiment", label: "Analyzing Sentiment", icon: "brain" },
-  { id: "detecting_topics", label: "Detecting Topics", icon: "tags" },
-  { id: "generating_insights", label: "Generating Insights", icon: "sparkles" },
+const STAGES: { id: AnalysisStage; label: string; description: string; icon: React.ReactNode }[] = [
+  {
+    id: "validating",
+    label: "Validating",
+    description: "Checking URL format and availability",
+    icon: <Link className="h-4 w-4" />
+  },
+  {
+    id: "fetching_metadata",
+    label: "Fetching Video",
+    description: "Getting video information",
+    icon: <Film className="h-4 w-4" />
+  },
+  {
+    id: "extracting_comments",
+    label: "Extracting Comments",
+    description: "Downloading all comments",
+    icon: <MessageSquare className="h-4 w-4" />
+  },
+  {
+    id: "analyzing_sentiment",
+    label: "Sentiment Analysis",
+    description: "AI classifies each comment",
+    icon: <Brain className="h-4 w-4" />
+  },
+  {
+    id: "detecting_topics",
+    label: "Topic Detection",
+    description: "Grouping comments by theme",
+    icon: <Tags className="h-4 w-4" />
+  },
+  {
+    id: "generating_insights",
+    label: "Generating Insights",
+    description: "Creating recommendations",
+    icon: <Sparkles className="h-4 w-4" />
+  },
 ];
 
 export function ProgressTerminal({
   currentStage,
   progress,
-  logs,
   videoTitle,
   commentsFound,
   commentsAnalyzed,
 }: ProgressTerminalProps) {
-  const scrollRef = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [logs]);
-
   const getStageStatus = (stageId: AnalysisStage) => {
     const stageIndex = STAGES.findIndex((s) => s.id === stageId);
     const currentIndex = STAGES.findIndex((s) => s.id === currentStage);
@@ -62,137 +85,131 @@ export function ProgressTerminal({
     return "pending";
   };
 
-  const formatTimestamp = () => {
-    return new Date().toLocaleTimeString("en-US", {
-      hour12: false,
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-  };
+  const currentStageIndex = STAGES.findIndex((s) => s.id === currentStage);
+  const currentStageInfo = STAGES[currentStageIndex];
 
   return (
-    <div className="h-full flex flex-col rounded-lg border bg-slate-900 text-white overflow-hidden">
-      {/* Terminal Header */}
-      <div className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 border-b border-slate-700">
-        <div className="flex gap-1.5">
-          <div className="h-2.5 w-2.5 rounded-full bg-red-500" />
-          <div className="h-2.5 w-2.5 rounded-full bg-yellow-500" />
-          <div className="h-2.5 w-2.5 rounded-full bg-green-500" />
-        </div>
-        <Terminal className="h-3.5 w-3.5 text-slate-400 ml-2" />
-        <span className="text-xs text-slate-400 font-mono">
-          vidinsight-analysis
-        </span>
-      </div>
-
-      {/* Progress Bar */}
-      <div className="px-4 py-3 bg-slate-800/50 border-b border-slate-700">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs text-slate-400">Overall Progress</span>
-          <span className="text-xs font-mono text-emerald-400">
+    <div className="h-full flex flex-col rounded-lg border bg-white overflow-hidden">
+      {/* Header */}
+      <div className="px-5 py-4 border-b bg-gradient-to-r from-indigo-50 to-white">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="font-semibold text-slate-800">Analyzing Video</h3>
+          <span className="text-sm font-medium text-indigo-600 tabular-nums">
             {Math.round(progress)}%
           </span>
         </div>
-        <Progress value={progress} className="h-1.5 bg-slate-700" />
+        <Progress value={progress} className="h-2" />
       </div>
 
-      {/* Stage Indicators */}
-      <div className="px-4 py-3 border-b border-slate-700 bg-slate-800/30">
-        <div className="grid grid-cols-6 gap-2">
-          {STAGES.map((stage) => {
+      {/* Video Info */}
+      {videoTitle && (
+        <div className="px-5 py-3 border-b bg-slate-50">
+          <p className="text-sm text-slate-600 truncate">
+            <span className="text-slate-400">Video:</span> {videoTitle}
+          </p>
+        </div>
+      )}
+
+      {/* Stages */}
+      <div className="flex-1 p-5 overflow-auto">
+        <div className="space-y-3">
+          {STAGES.map((stage, index) => {
             const status = getStageStatus(stage.id);
+            const isLast = index === STAGES.length - 1;
+
             return (
-              <div key={stage.id} className="text-center">
-                <div
-                  className={cn(
-                    "h-7 w-7 rounded-full flex items-center justify-center mx-auto mb-1",
-                    status === "complete" && "bg-emerald-500/20",
-                    status === "active" && "bg-indigo-500/20",
-                    status === "error" && "bg-red-500/20",
-                    status === "pending" && "bg-slate-700"
-                  )}
-                >
-                  {status === "complete" && (
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                  )}
-                  {status === "active" && (
-                    <Loader2 className="h-4 w-4 text-indigo-400 animate-spin" />
-                  )}
-                  {status === "error" && (
-                    <AlertCircle className="h-4 w-4 text-red-400" />
-                  )}
-                  {status === "pending" && (
-                    <Circle className="h-3 w-3 text-slate-500" />
+              <div key={stage.id} className="flex gap-3">
+                {/* Icon & Line */}
+                <div className="flex flex-col items-center">
+                  <div
+                    className={cn(
+                      "h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all",
+                      status === "complete" && "bg-emerald-100 text-emerald-600",
+                      status === "active" && "bg-indigo-100 text-indigo-600",
+                      status === "error" && "bg-red-100 text-red-600",
+                      status === "pending" && "bg-slate-100 text-slate-400"
+                    )}
+                  >
+                    {status === "complete" ? (
+                      <CheckCircle2 className="h-4 w-4" />
+                    ) : status === "active" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      stage.icon
+                    )}
+                  </div>
+                  {!isLast && (
+                    <div
+                      className={cn(
+                        "w-0.5 flex-1 min-h-[12px] mt-1",
+                        status === "complete" ? "bg-emerald-200" : "bg-slate-200"
+                      )}
+                    />
                   )}
                 </div>
-                <span
-                  className={cn(
-                    "text-[9px] leading-tight block",
-                    status === "complete" && "text-emerald-400",
-                    status === "active" && "text-indigo-400",
-                    status === "error" && "text-red-400",
-                    status === "pending" && "text-slate-500"
+
+                {/* Text */}
+                <div className="pt-1 pb-2">
+                  <p
+                    className={cn(
+                      "text-sm font-medium leading-tight",
+                      status === "complete" && "text-emerald-700",
+                      status === "active" && "text-indigo-700",
+                      status === "error" && "text-red-700",
+                      status === "pending" && "text-slate-400"
+                    )}
+                  >
+                    {stage.label}
+                  </p>
+                  <p
+                    className={cn(
+                      "text-xs mt-0.5",
+                      status === "active" ? "text-slate-500" : "text-slate-400"
+                    )}
+                  >
+                    {stage.description}
+                  </p>
+
+                  {/* Show progress for extracting/analyzing stages */}
+                  {status === "active" && stage.id === "extracting_comments" && commentsFound !== undefined && (
+                    <p className="text-xs mt-1 text-indigo-600 font-medium tabular-nums">
+                      {commentsFound.toLocaleString()} comments found
+                    </p>
                   )}
-                >
-                  {stage.label}
-                </span>
+                  {status === "active" && stage.id === "analyzing_sentiment" && commentsAnalyzed !== undefined && commentsFound !== undefined && (
+                    <div className="mt-1.5">
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="text-slate-500">Processing comments</span>
+                        <span className="text-indigo-600 font-medium tabular-nums">
+                          {commentsAnalyzed}/{commentsFound}
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-indigo-500 rounded-full transition-all duration-300"
+                          style={{ width: `${commentsFound > 0 ? (commentsAnalyzed / commentsFound) * 100 : 0}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* Live Stats */}
-      {(videoTitle || commentsFound || commentsAnalyzed) && (
-        <div className="px-4 py-2 border-b border-slate-700 flex items-center gap-4 text-xs">
-          {videoTitle && (
-            <span className="text-slate-400 truncate max-w-[200px]">
-              <span className="text-slate-500">Video:</span> {videoTitle}
+      {/* Current Stage Highlight */}
+      {currentStageInfo && currentStage !== "complete" && currentStage !== "error" && (
+        <div className="px-5 py-3 border-t bg-indigo-50">
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 text-indigo-600 animate-spin" />
+            <span className="text-sm text-indigo-700 font-medium">
+              {currentStageInfo.label}...
             </span>
-          )}
-          {commentsFound !== undefined && (
-            <span className="text-emerald-400 tabular-nums">
-              <span className="text-slate-500">Found:</span> {commentsFound.toLocaleString()}
-            </span>
-          )}
-          {commentsAnalyzed !== undefined && commentsFound !== undefined && (
-            <span className="text-indigo-400 tabular-nums">
-              <span className="text-slate-500">Analyzed:</span>{" "}
-              {commentsAnalyzed.toLocaleString()}/{commentsFound.toLocaleString()}
-            </span>
-          )}
+          </div>
         </div>
       )}
-
-      {/* Log Output */}
-      <ScrollArea className="flex-1 min-h-0">
-        <div ref={scrollRef} className="p-4 font-mono text-xs space-y-1">
-          {logs.map((log, index) => (
-            <div key={index} className="flex gap-2">
-              <span className="text-slate-500 flex-shrink-0">
-                [{formatTimestamp()}]
-              </span>
-              <span
-                className={cn(
-                  log.stage === "error" && "text-red-400",
-                  log.stage === "complete" && "text-emerald-400",
-                  !["error", "complete"].includes(log.stage) && "text-slate-300"
-                )}
-              >
-                {log.message}
-              </span>
-            </div>
-          ))}
-          {currentStage !== "complete" && currentStage !== "error" && (
-            <div className="flex gap-2 animate-pulse">
-              <span className="text-slate-500">[{formatTimestamp()}]</span>
-              <span className="text-indigo-400">Processing...</span>
-              <span className="inline-block animate-bounce">_</span>
-            </div>
-          )}
-        </div>
-      </ScrollArea>
     </div>
   );
 }
