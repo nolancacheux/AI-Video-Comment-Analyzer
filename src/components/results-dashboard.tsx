@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { ABSASection } from "@/components/results/absa-section";
 import type { AnalysisResult, Topic, SentimentType, PriorityLevel } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -262,6 +263,13 @@ export function ResultsDashboard({ result, className }: ResultsDashboardProps) {
         <h3 className="text-lg font-semibold mb-4">Sentiment Overview</h3>
         <SentimentOverview result={result} />
       </div>
+
+      {result.absa && (
+        <>
+          <Separator />
+          <ABSASection absa={result.absa} />
+        </>
+      )}
 
       <Separator />
 
