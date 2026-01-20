@@ -22,7 +22,7 @@ import { ErrorDisplay } from "@/components/error-display";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAnalysis } from "@/hooks/useAnalysis";
-import { getAnalysisResult, getAnalysisHistory } from "@/lib/api";
+import { getAnalysisResult, getAnalysisHistory, deleteAnalysis } from "@/lib/api";
 import type { AnalysisResult, AnalysisHistoryItem, Topic } from "@/types";
 
 export default function Home() {
@@ -41,7 +41,6 @@ export default function Home() {
     reset,
   } = useAnalysis();
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [history, setHistory] = useState<AnalysisHistoryItem[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [historyResult, setHistoryResult] = useState<AnalysisResult | null>(null);
@@ -88,6 +87,18 @@ export default function Home() {
     setSelectedTopic(null);
   }, [reset]);
 
+  const handleDeleteHistory = useCallback(async (id: number) => {
+    try {
+      await deleteAnalysis(id);
+      setHistory((prev) => prev.filter((item) => item.id !== id));
+      if (historyResult?.id === id) {
+        setHistoryResult(null);
+      }
+    } catch (err) {
+      console.error("Failed to delete analysis:", err);
+    }
+  }, [historyResult?.id]);
+
   const displayResult = result || historyResult;
   const showInputState = !displayResult && !isAnalyzing && !error;
   const showAnalyzingState = isAnalyzing;
@@ -123,6 +134,9 @@ export default function Home() {
       comments = comments.filter((c) => c.topicName === selectedTopic.name);
     }
 
+    // Sort by likes (most engaged first)
+    comments.sort((a, b) => b.like_count - a.like_count);
+
     // Deduplicate and limit
     const seen = new Set<string>();
     return comments
@@ -138,15 +152,13 @@ export default function Home() {
     <div className="h-screen w-screen overflow-hidden bg-[#FAFAFA] flex">
       {/* Sidebar */}
       <Sidebar
-        isCollapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         history={history}
         isLoadingHistory={isLoadingHistory}
         onNewAnalysis={handleNewAnalysis}
         onSelectHistory={handleSelectHistory}
+        onDeleteHistory={handleDeleteHistory}
         selectedId={displayResult?.id}
         isAnalyzing={isAnalyzing}
-        mlStatus={isAnalyzing ? "processing" : displayResult ? "ready" : "idle"}
       />
 
       {/* Main Content */}
@@ -174,17 +186,19 @@ export default function Home() {
                   </p>
                 </div>
                 <UrlInput onValidUrl={handleValidUrl} />
-                <div className="grid grid-cols-3 gap-4 text-center text-xs text-muted-foreground">
-                  <div className="p-3 rounded-lg bg-white border">
-                    <Heart className="h-5 w-5 mx-auto mb-1 text-emerald-500" />
+                <div className="flex items-center justify-center gap-6 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Heart className="h-4 w-4 text-emerald-500" />
                     <span>Sentiment Analysis</span>
                   </div>
-                  <div className="p-3 rounded-lg bg-white border">
-                    <MessageSquare className="h-5 w-5 mx-auto mb-1 text-blue-500" />
+                  <div className="h-3 w-px bg-slate-200" />
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4 text-blue-500" />
                     <span>Topic Detection</span>
                   </div>
-                  <div className="p-3 rounded-lg bg-white border">
-                    <Lightbulb className="h-5 w-5 mx-auto mb-1 text-amber-500" />
+                  <div className="h-3 w-px bg-slate-200" />
+                  <div className="flex items-center gap-2">
+                    <Lightbulb className="h-4 w-4 text-amber-500" />
                     <span>Actionable Insights</span>
                   </div>
                 </div>
