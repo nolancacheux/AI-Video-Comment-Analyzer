@@ -23,6 +23,11 @@ from api.models import (
     SentimentType,
     PriorityLevel,
     AnalysisStage,
+    AspectType,
+    AspectStatsResponse,
+    RecommendationResponse,
+    HealthBreakdownResponse,
+    ABSAResponse,
 )
 from api.services import (
     YouTubeExtractor,
@@ -32,6 +37,11 @@ from api.services import (
     get_sentiment_analyzer,
     get_topic_modeler,
     SentimentCategory,
+    get_absa_analyzer,
+    aggregate_absa_results,
+    generate_insight_report,
+    Aspect,
+    AspectSentiment,
 )
 
 router = APIRouter(prefix="/api/analysis", tags=["analysis"])
@@ -249,10 +259,50 @@ async def run_analysis(url: str, db: Session) -> AsyncGenerator[str, None]:
         if sr.category == SentimentCategory.NEUTRAL
     ]
 
+    # ABSA (Aspect-Based Sentiment Analysis)
+    yield format_sse(ProgressEvent(
+        stage=AnalysisStage.ANALYZING_ASPECTS,
+        message="Analyzing aspects (content, audio, production, pacing, presenter)...",
+        progress=66,
+    ))
+
+    absa_start = time.perf_counter()
+    absa_analyzer = get_absa_analyzer()
+    absa_results = []
+    engagement_weights = []
+
+    for i, (result, progress) in enumerate(absa_analyzer.analyze_batch_with_progress(texts)):
+        absa_results.append(result)
+        engagement_weights.append(float(comments_data[i].like_count + 1))  # +1 to avoid zero weights
+
+        if progress.processed % 20 == 0 or progress.processed == progress.total:
+            yield format_sse(ProgressEvent(
+                stage=AnalysisStage.ANALYZING_ASPECTS,
+                message=f"Aspect analysis: {progress.processed}/{progress.total} comments",
+                progress=66 + int((progress.processed / progress.total) * 4),
+            ))
+            await asyncio.sleep(0.01)
+
+    absa_time = time.perf_counter() - absa_start
+
+    # Aggregate ABSA results
+    absa_aggregation = aggregate_absa_results(absa_results, engagement_weights)
+    insight_report = generate_insight_report(video.id, absa_aggregation)
+
+    yield format_sse(ProgressEvent(
+        stage=AnalysisStage.ANALYZING_ASPECTS,
+        message=f"Aspect analysis complete in {absa_time:.1f}s (health score: {absa_aggregation.health_score:.0f}/100)",
+        progress=70,
+        data={
+            "absa_health_score": absa_aggregation.health_score,
+            "absa_dominant_aspects": [a.value for a in absa_aggregation.dominant_aspects],
+        },
+    ))
+
     yield format_sse(ProgressEvent(
         stage=AnalysisStage.DETECTING_TOPICS,
         message="Detecting topics...",
-        progress=70,
+        progress=72,
     ))
 
     topic_modeler = get_topic_modeler()
@@ -277,6 +327,57 @@ async def run_analysis(url: str, db: Session) -> AsyncGenerator[str, None]:
         progress=85,
     ))
 
+    # Serialize ABSA data for storage
+    absa_json = {
+        "aggregation": {
+            "total_comments": absa_aggregation.total_comments,
+            "health_score": absa_aggregation.health_score,
+            "dominant_aspects": [a.value for a in absa_aggregation.dominant_aspects],
+            "sentiment_distribution": {
+                k.value: v for k, v in absa_aggregation.sentiment_distribution.items()
+            },
+            "aspect_stats": {
+                aspect.value: {
+                    "mention_count": stats.mention_count,
+                    "mention_percentage": stats.mention_percentage,
+                    "avg_confidence": stats.avg_confidence,
+                    "positive_count": stats.positive_count,
+                    "negative_count": stats.negative_count,
+                    "neutral_count": stats.neutral_count,
+                    "sentiment_score": stats.sentiment_score,
+                }
+                for aspect, stats in absa_aggregation.aspect_stats.items()
+            },
+        },
+        "insight_report": {
+            "video_id": insight_report.video_id,
+            "generated_at": insight_report.generated_at.isoformat(),
+            "summary": insight_report.summary,
+            "key_metrics": insight_report.key_metrics,
+            "health": {
+                "overall_score": insight_report.health.overall_score,
+                "trend": insight_report.health.trend,
+                "strengths": [a.value for a in insight_report.health.strengths],
+                "weaknesses": [a.value for a in insight_report.health.weaknesses],
+                "aspect_scores": {
+                    a.value: s for a, s in insight_report.health.aspect_scores.items()
+                },
+            },
+            "recommendations": [
+                {
+                    "aspect": rec.aspect.value,
+                    "priority": rec.priority.value,
+                    "rec_type": rec.rec_type.value,
+                    "title": rec.title,
+                    "description": rec.description,
+                    "evidence": rec.evidence,
+                    "action_items": rec.action_items,
+                }
+                for rec in insight_report.recommendations
+            ],
+        },
+    }
+
     analysis = Analysis(
         video_id=video.id,
         total_comments=len(comments_data),
@@ -287,6 +388,7 @@ async def run_analysis(url: str, db: Session) -> AsyncGenerator[str, None]:
         positive_engagement=sum(cd.like_count for _, cd in positive_comments),
         negative_engagement=sum(cd.like_count for _, cd in negative_comments),
         suggestion_engagement=sum(cd.like_count for _, cd in suggestion_comments),
+        absa_data=absa_json,
     )
     db.add(analysis)
     db.commit()
@@ -445,6 +547,64 @@ async def get_analysis_result(analysis_id: int, db: Session = Depends(get_db)):
         confidence_distribution=confidence_distribution,
     )
 
+    # Build ABSA response from stored data
+    absa_response = None
+    if analysis.absa_data:
+        absa_data = analysis.absa_data
+        agg = absa_data.get("aggregation", {})
+        report = absa_data.get("insight_report", {})
+        health_data = report.get("health", {})
+
+        # Build aspect stats
+        aspect_stats = {}
+        for aspect_str, stats in agg.get("aspect_stats", {}).items():
+            aspect_type = AspectType(aspect_str)
+            aspect_stats[aspect_type] = AspectStatsResponse(
+                aspect=aspect_type,
+                mention_count=stats.get("mention_count", 0),
+                mention_percentage=stats.get("mention_percentage", 0.0),
+                avg_confidence=stats.get("avg_confidence", 0.0),
+                positive_count=stats.get("positive_count", 0),
+                negative_count=stats.get("negative_count", 0),
+                neutral_count=stats.get("neutral_count", 0),
+                sentiment_score=stats.get("sentiment_score", 0.0),
+            )
+
+        # Build health breakdown
+        aspect_scores = {
+            AspectType(k): v for k, v in health_data.get("aspect_scores", {}).items()
+        }
+        health = HealthBreakdownResponse(
+            overall_score=health_data.get("overall_score", 50.0),
+            aspect_scores=aspect_scores,
+            trend=health_data.get("trend", "stable"),
+            strengths=[AspectType(a) for a in health_data.get("strengths", [])],
+            weaknesses=[AspectType(a) for a in health_data.get("weaknesses", [])],
+        )
+
+        # Build recommendations
+        recommendations = [
+            RecommendationResponse(
+                aspect=AspectType(rec.get("aspect")),
+                priority=rec.get("priority", "medium"),
+                rec_type=rec.get("rec_type", "improve"),
+                title=rec.get("title", ""),
+                description=rec.get("description", ""),
+                evidence=rec.get("evidence", ""),
+                action_items=rec.get("action_items", []),
+            )
+            for rec in report.get("recommendations", [])
+        ]
+
+        absa_response = ABSAResponse(
+            total_comments_analyzed=agg.get("total_comments", 0),
+            aspect_stats=aspect_stats,
+            dominant_aspects=[AspectType(a) for a in agg.get("dominant_aspects", [])],
+            health=health,
+            recommendations=recommendations,
+            summary=report.get("summary", ""),
+        )
+
     return AnalysisResponse(
         id=analysis.id,
         video=VideoResponse(
@@ -470,6 +630,7 @@ async def get_analysis_result(analysis_id: int, db: Session = Depends(get_db)):
         topics=topic_responses,
         recommendations=analysis.recommendations or [],
         ml_metadata=ml_metadata,
+        absa=absa_response,
     )
 
 

@@ -21,10 +21,19 @@ class AnalysisStage(str, Enum):
     FETCHING_METADATA = "fetching_metadata"
     EXTRACTING_COMMENTS = "extracting_comments"
     ANALYZING_SENTIMENT = "analyzing_sentiment"
+    ANALYZING_ASPECTS = "analyzing_aspects"
     DETECTING_TOPICS = "detecting_topics"
     GENERATING_INSIGHTS = "generating_insights"
     COMPLETE = "complete"
     ERROR = "error"
+
+
+class AspectType(str, Enum):
+    CONTENT = "content"
+    AUDIO = "audio"
+    PRODUCTION = "production"
+    PACING = "pacing"
+    PRESENTER = "presenter"
 
 
 class AnalyzeRequest(BaseModel):
@@ -91,6 +100,7 @@ class AnalysisResponse(BaseModel):
     topics: list[TopicResponse] = Field(default_factory=list)
     recommendations: list[str] = Field(default_factory=list)
     ml_metadata: MLMetadata | None = None
+    absa: "ABSAResponse | None" = None
 
 
 class ProgressEvent(BaseModel):
@@ -112,3 +122,51 @@ class AnalysisHistoryItem(BaseModel):
 class ErrorResponse(BaseModel):
     error: str
     detail: str | None = None
+
+
+# ABSA (Aspect-Based Sentiment Analysis) Models
+
+class AspectStatsResponse(BaseModel):
+    """Statistics for a single aspect."""
+    aspect: AspectType
+    mention_count: int
+    mention_percentage: float
+    avg_confidence: float
+    positive_count: int
+    negative_count: int
+    neutral_count: int
+    sentiment_score: float  # -1 to 1 scale
+
+
+class RecommendationResponse(BaseModel):
+    """An actionable recommendation."""
+    aspect: AspectType
+    priority: str  # "critical", "high", "medium", "low"
+    rec_type: str  # "improve", "maintain", "investigate", "celebrate"
+    title: str
+    description: str
+    evidence: str
+    action_items: list[str] = Field(default_factory=list)
+
+
+class HealthBreakdownResponse(BaseModel):
+    """Health score breakdown."""
+    overall_score: float
+    aspect_scores: dict[AspectType, float]
+    trend: str  # "improving", "stable", "declining"
+    strengths: list[AspectType] = Field(default_factory=list)
+    weaknesses: list[AspectType] = Field(default_factory=list)
+
+
+class ABSAResponse(BaseModel):
+    """Aspect-Based Sentiment Analysis results."""
+    total_comments_analyzed: int
+    aspect_stats: dict[AspectType, AspectStatsResponse]
+    dominant_aspects: list[AspectType] = Field(default_factory=list)
+    health: HealthBreakdownResponse
+    recommendations: list[RecommendationResponse] = Field(default_factory=list)
+    summary: str
+
+
+# Rebuild AnalysisResponse to resolve forward reference to ABSAResponse
+AnalysisResponse.model_rebuild()

@@ -12,6 +12,11 @@ from .schemas import (
     SentimentType,
     PriorityLevel,
     AnalysisStage,
+    AspectType,
+    AspectStatsResponse,
+    RecommendationResponse,
+    HealthBreakdownResponse,
+    ABSAResponse,
 )
 
 __all__ = [
@@ -28,4 +33,9 @@ __all__ = [
     "SentimentType",
     "PriorityLevel",
     "AnalysisStage",
+    "AspectType",
+    "AspectStatsResponse",
+    "RecommendationResponse",
+    "HealthBreakdownResponse",
+    "ABSAResponse",
 ]
