@@ -61,6 +61,15 @@ export async function getAnalysisHistory(limit = 10): Promise<AnalysisHistoryIte
   return response.json();
 }
 
+export async function deleteAnalysis(analysisId: number): Promise<void> {
+  const response = await fetch(`${API_BASE}/api/analysis/history/${analysisId}`, {
+    method: "DELETE",
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+}
+
 export async function getLatestAnalysisForVideo(
   videoId: string
 ): Promise<AnalysisResult | null> {
