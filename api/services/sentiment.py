@@ -26,6 +26,16 @@ class SentimentResult:
     is_suggestion: bool = False
 
 
+@dataclass
+class BatchProgress:
+    batch_num: int
+    total_batches: int
+    processed: int
+    total: int
+    batch_time_ms: float
+    tokens_in_batch: int
+
+
 SUGGESTION_PATTERNS = [
     r"\b(?:you\s+)?(?:should|could|would|might)\s+(?:try|consider|add|include|make|do|use|show|explain|cover)",
     r"\b(?:please|pls)\s+(?:add|make|do|try|show|include|explain|cover)",
@@ -169,15 +179,40 @@ class SentimentAnalyzer:
         batch_size: int = 32,
         max_length: int = 512,
     ) -> list[SentimentResult]:
-        if not self._ml_available:
-            results = []
-            for text in texts:
-                results.append(self.analyze_single(text))
-            return results
-
+        """Analyze texts and return results (non-streaming version)."""
         results = []
+        for result, _ in self.analyze_batch_with_progress(texts, batch_size, max_length):
+            results.append(result)
+        return results
 
-        for i in range(0, len(texts), batch_size):
+    def analyze_batch_with_progress(
+        self,
+        texts: list[str],
+        batch_size: int = 32,
+        max_length: int = 512,
+    ):
+        """Generator that yields (SentimentResult, BatchProgress) tuples."""
+        import time
+
+        total_batches = (len(texts) + batch_size - 1) // batch_size
+
+        if not self._ml_available:
+            for i, text in enumerate(texts):
+                result = self.analyze_single(text)
+                progress = BatchProgress(
+                    batch_num=(i // batch_size) + 1,
+                    total_batches=total_batches,
+                    processed=i + 1,
+                    total=len(texts),
+                    batch_time_ms=5.0,
+                    tokens_in_batch=len(text.split()),
+                )
+                yield result, progress
+            return
+
+        processed = 0
+        for batch_idx, i in enumerate(range(0, len(texts), batch_size)):
+            batch_start = time.perf_counter()
             batch_texts = texts[i : i + batch_size]
             batch_suggestions = [is_suggestion(t) for t in batch_texts]
 
@@ -188,6 +223,7 @@ class SentimentAnalyzer:
                 max_length=max_length,
                 padding=True,
             )
+            tokens_in_batch = inputs["input_ids"].numel()
             inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
             with torch.no_grad():
@@ -199,43 +235,46 @@ class SentimentAnalyzer:
                     for j in range(len(predicted_classes))
                 ]
 
+            batch_time_ms = (time.perf_counter() - batch_start) * 1000
+
             for j, (pred_class, conf, is_sugg) in enumerate(
                 zip(predicted_classes, confidences, batch_suggestions)
             ):
+                processed += 1
                 if is_sugg:
-                    results.append(
-                        SentimentResult(
-                            category=SentimentCategory.SUGGESTION,
-                            score=conf,
-                            is_suggestion=True,
-                        )
+                    result = SentimentResult(
+                        category=SentimentCategory.SUGGESTION,
+                        score=conf,
+                        is_suggestion=True,
                     )
                 elif pred_class <= 1:
-                    results.append(
-                        SentimentResult(
-                            category=SentimentCategory.NEGATIVE,
-                            score=conf,
-                            is_suggestion=False,
-                        )
+                    result = SentimentResult(
+                        category=SentimentCategory.NEGATIVE,
+                        score=conf,
+                        is_suggestion=False,
                     )
                 elif pred_class >= 3:
-                    results.append(
-                        SentimentResult(
-                            category=SentimentCategory.POSITIVE,
-                            score=conf,
-                            is_suggestion=False,
-                        )
+                    result = SentimentResult(
+                        category=SentimentCategory.POSITIVE,
+                        score=conf,
+                        is_suggestion=False,
                     )
                 else:
-                    results.append(
-                        SentimentResult(
-                            category=SentimentCategory.NEUTRAL,
-                            score=conf,
-                            is_suggestion=False,
-                        )
+                    result = SentimentResult(
+                        category=SentimentCategory.NEUTRAL,
+                        score=conf,
+                        is_suggestion=False,
                     )
 
-        return results
+                progress = BatchProgress(
+                    batch_num=batch_idx + 1,
+                    total_batches=total_batches,
+                    processed=processed,
+                    total=len(texts),
+                    batch_time_ms=batch_time_ms,
+                    tokens_in_batch=tokens_in_batch,
+                )
+                yield result, progress
 
 
 @lru_cache(maxsize=1)
