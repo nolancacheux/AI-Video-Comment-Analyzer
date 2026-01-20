@@ -2,10 +2,10 @@
 
 import * as React from "react";
 import {
-  ChevronDown,
-  ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Plus,
-  Trash2,
+  X,
   Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -33,7 +33,7 @@ export function Sidebar({
   selectedId,
   isAnalyzing,
 }: SidebarProps) {
-  const [historyExpanded, setHistoryExpanded] = React.useState(true);
+  const [collapsed, setCollapsed] = React.useState(false);
 
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
@@ -58,70 +58,112 @@ export function Sidebar({
   };
 
   return (
-    <div className="flex h-full w-56 flex-col border-r bg-white">
+    <div
+      className={cn(
+        "flex h-full flex-col border-r bg-white transition-all duration-200",
+        collapsed ? "w-14" : "w-56"
+      )}
+    >
+      {/* Header with toggle */}
+      <div className="flex items-center justify-between p-2 border-b">
+        {!collapsed && (
+          <span className="text-sm font-semibold text-slate-700">VidInsight</span>
+        )}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className={cn(
+            "p-1.5 rounded hover:bg-slate-100 transition-colors",
+            collapsed && "mx-auto"
+          )}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {collapsed ? (
+            <ChevronRight className="h-4 w-4 text-slate-500" />
+          ) : (
+            <ChevronLeft className="h-4 w-4 text-slate-500" />
+          )}
+        </button>
+      </div>
+
       {/* New Analysis Button */}
       <div className="p-2">
         <Button
           onClick={onNewAnalysis}
           disabled={isAnalyzing}
-          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white h-9"
+          className={cn(
+            "bg-indigo-600 hover:bg-indigo-700 text-white h-9",
+            collapsed ? "w-full px-0" : "w-full"
+          )}
+          title="New Analysis"
         >
           <Plus className="h-4 w-4" />
-          <span className="ml-2 text-sm">New Analysis</span>
+          {!collapsed && <span className="ml-2 text-sm">New Analysis</span>}
         </Button>
       </div>
 
       {/* History Section */}
-      <button
-        onClick={() => setHistoryExpanded(!historyExpanded)}
-        className="flex items-center justify-between px-3 py-2 hover:bg-slate-50 transition-colors"
-      >
-        <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-          History
-        </span>
-        <div className="flex items-center gap-1">
-          <span className="text-[10px] text-slate-400">{history.length}</span>
-          {historyExpanded ? (
-            <ChevronUp className="h-3 w-3 text-slate-400" />
-          ) : (
-            <ChevronDown className="h-3 w-3 text-slate-400" />
-          )}
+      {!collapsed && (
+        <div className="px-3 py-2">
+          <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+            History
+          </span>
         </div>
-      </button>
+      )}
 
-      {historyExpanded && (
-        <ScrollArea className="flex-1 min-h-0">
-          <div className="px-2 pb-2">
-            {isLoadingHistory ? (
-              <div className="space-y-1">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="h-12 w-full rounded-lg" />
-                ))}
-              </div>
-            ) : history.length === 0 ? (
+      <ScrollArea className="flex-1 min-h-0">
+        <div className={cn("pb-2", collapsed ? "px-1" : "px-2")}>
+          {isLoadingHistory ? (
+            <div className="space-y-1">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton
+                  key={i}
+                  className={cn(
+                    "rounded-lg",
+                    collapsed ? "h-10 w-10 mx-auto" : "h-12 w-full"
+                  )}
+                />
+              ))}
+            </div>
+          ) : history.length === 0 ? (
+            !collapsed && (
               <p className="text-xs text-slate-400 text-center py-4">
                 No analyses yet
               </p>
-            ) : (
-              <div className="space-y-1">
-                {history.map((item) => (
-                  <div
-                    key={item.id}
-                    className={cn(
-                      "group relative flex items-center gap-2 rounded-lg p-2 cursor-pointer transition-colors hover:bg-slate-50",
-                      selectedId === item.id && "bg-indigo-50 ring-1 ring-indigo-200"
-                    )}
-                    onClick={() => onSelectHistory(item)}
-                  >
-                    {item.video_thumbnail ? (
-                      <img
-                        src={item.video_thumbnail}
-                        alt=""
-                        className="h-8 w-14 rounded object-cover flex-shrink-0"
-                      />
-                    ) : (
-                      <div className="h-8 w-14 rounded bg-slate-100 flex-shrink-0" />
-                    )}
+            )
+          ) : (
+            <div className="space-y-1">
+              {history.map((item) => (
+                <div
+                  key={item.id}
+                  className={cn(
+                    "relative flex items-center rounded-lg cursor-pointer transition-colors hover:bg-slate-50",
+                    collapsed ? "p-1 justify-center" : "p-2 gap-2",
+                    selectedId === item.id && "bg-indigo-50 ring-1 ring-indigo-200"
+                  )}
+                  onClick={() => onSelectHistory(item)}
+                  title={collapsed ? item.video_title : undefined}
+                >
+                  {/* Thumbnail */}
+                  {item.video_thumbnail ? (
+                    <img
+                      src={item.video_thumbnail}
+                      alt=""
+                      className={cn(
+                        "rounded object-cover flex-shrink-0",
+                        collapsed ? "h-8 w-8" : "h-8 w-14"
+                      )}
+                    />
+                  ) : (
+                    <div
+                      className={cn(
+                        "rounded bg-slate-100 flex-shrink-0",
+                        collapsed ? "h-8 w-8" : "h-8 w-14"
+                      )}
+                    />
+                  )}
+
+                  {/* Title and time - only when expanded */}
+                  {!collapsed && (
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium truncate leading-tight text-slate-700">
                         {item.video_title}
@@ -133,22 +175,24 @@ export function Sidebar({
                         </span>
                       </div>
                     </div>
-                    {onDeleteHistory && (
-                      <button
-                        onClick={(e) => handleDelete(e, item.id)}
-                        className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 transition-all"
-                        title="Delete"
-                      >
-                        <Trash2 className="h-3 w-3 text-red-400 hover:text-red-600" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </ScrollArea>
-      )}
+                  )}
+
+                  {/* Delete button - always visible when expanded */}
+                  {onDeleteHistory && !collapsed && (
+                    <button
+                      onClick={(e) => handleDelete(e, item.id)}
+                      className="p-1 rounded hover:bg-red-100 transition-colors flex-shrink-0"
+                      title="Delete"
+                    >
+                      <X className="h-3.5 w-3.5 text-slate-400 hover:text-red-500" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </ScrollArea>
     </div>
   );
 }
