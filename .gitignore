@@ -27,6 +27,11 @@ eggs/
 parts/
 sdist/
 var/
+.claude/
+.mcp.json
+_bmad/
+_bmad-output/
+.agentvibes/
 wheels/
 *.egg-info/
 .installed.cfg
@@ -81,3 +86,4 @@ next-env.d.ts
 
 # Debug
 .debug/
+
