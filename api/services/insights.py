@@ -12,19 +12,18 @@ Provides:
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 
 from .absa import (
     ABSAAggregation,
-    ABSAResult,
+    AggregatedAspectStats,
     Aspect,
     AspectSentiment,
-    AggregatedAspectStats,
 )
 
 
 class RecommendationPriority(str, Enum):
     """Priority level for recommendations."""
+
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
@@ -33,6 +32,7 @@ class RecommendationPriority(str, Enum):
 
 class RecommendationType(str, Enum):
     """Type of recommendation."""
+
     IMPROVE = "improve"
     MAINTAIN = "maintain"
     INVESTIGATE = "investigate"
@@ -42,6 +42,7 @@ class RecommendationType(str, Enum):
 @dataclass
 class Recommendation:
     """A single actionable recommendation."""
+
     aspect: Aspect
     priority: RecommendationPriority
     rec_type: RecommendationType
@@ -54,6 +55,7 @@ class Recommendation:
 @dataclass
 class HealthBreakdown:
     """Detailed breakdown of health score."""
+
     overall_score: float
     aspect_scores: dict[Aspect, float]
     trend: str  # "improving", "stable", "declining"
@@ -64,6 +66,7 @@ class HealthBreakdown:
 @dataclass
 class InsightReport:
     """Complete insight report for a video analysis."""
+
     video_id: str
     generated_at: datetime
     health: HealthBreakdown
@@ -74,15 +77,15 @@ class InsightReport:
 
 # Thresholds for recommendation generation
 NEGATIVE_THRESHOLD = -0.2  # Sentiment score below this triggers improvement
-POSITIVE_THRESHOLD = 0.3   # Sentiment score above this is a strength
-MENTION_THRESHOLD = 10     # Minimum mentions to consider aspect significant
-CRITICAL_NEGATIVE = -0.5   # Very negative sentiment triggers critical priority
+POSITIVE_THRESHOLD = 0.3  # Sentiment score above this is a strength
+MENTION_THRESHOLD = 10  # Minimum mentions to consider aspect significant
+CRITICAL_NEGATIVE = -0.5  # Very negative sentiment triggers critical priority
 
 
 def _generate_aspect_recommendations(
     aspect: Aspect,
     stats: AggregatedAspectStats,
-) -> Optional[Recommendation]:
+) -> Recommendation | None:
     """Generate recommendation for a single aspect based on its stats."""
 
     # Skip aspects with very few mentions
@@ -202,7 +205,9 @@ def _create_improvement_recommendation(
 
     return Recommendation(
         aspect=aspect,
-        priority=RecommendationPriority.HIGH if stats.sentiment_score < -0.3 else RecommendationPriority.MEDIUM,
+        priority=RecommendationPriority.HIGH
+        if stats.sentiment_score < -0.3
+        else RecommendationPriority.MEDIUM,
         rec_type=RecommendationType.IMPROVE,
         title=f"Improve {aspect.value.title()}",
         description=aspect_tips[aspect],
@@ -226,8 +231,7 @@ def _create_celebration_recommendation(
     }
 
     evidence = (
-        f"{stats.positive_count} positive mentions, "
-        f"sentiment score: {stats.sentiment_score:.2f}"
+        f"{stats.positive_count} positive mentions, sentiment score: {stats.sentiment_score:.2f}"
     )
 
     return Recommendation(
@@ -261,7 +265,7 @@ def _create_investigation_recommendation(
         evidence=evidence,
         action_items=[
             f"Review negative {aspect.value} comments for patterns",
-            f"Identify what positive commenters appreciate",
+            "Identify what positive commenters appreciate",
         ],
     )
 
@@ -361,11 +365,15 @@ def generate_summary(
 
     # Overall health
     if health.overall_score >= 70:
-        parts.append(f"Overall sentiment is positive (health score: {health.overall_score:.0f}/100).")
+        parts.append(
+            f"Overall sentiment is positive (health score: {health.overall_score:.0f}/100)."
+        )
     elif health.overall_score >= 40:
         parts.append(f"Overall sentiment is mixed (health score: {health.overall_score:.0f}/100).")
     else:
-        parts.append(f"Overall sentiment needs attention (health score: {health.overall_score:.0f}/100).")
+        parts.append(
+            f"Overall sentiment needs attention (health score: {health.overall_score:.0f}/100)."
+        )
 
     # Dominant aspects
     if aggregation.dominant_aspects:
@@ -414,16 +422,21 @@ def generate_insight_report(
         "health_score": aggregation.health_score,
         "positive_ratio": (
             aggregation.sentiment_distribution.get(AspectSentiment.POSITIVE, 0)
-            / aggregation.total_comments * 100
-            if aggregation.total_comments > 0 else 0
+            / aggregation.total_comments
+            * 100
+            if aggregation.total_comments > 0
+            else 0
         ),
         "negative_ratio": (
             aggregation.sentiment_distribution.get(AspectSentiment.NEGATIVE, 0)
-            / aggregation.total_comments * 100
-            if aggregation.total_comments > 0 else 0
+            / aggregation.total_comments
+            * 100
+            if aggregation.total_comments > 0
+            else 0
         ),
         "aspects_covered": sum(
-            1 for a in Aspect
+            1
+            for a in Aspect
             if aggregation.aspect_stats.get(a) and aggregation.aspect_stats[a].mention_count > 0
         ),
     }
@@ -441,6 +454,7 @@ def generate_insight_report(
 @dataclass
 class TrendPoint:
     """A single point in trend analysis."""
+
     timestamp: datetime
     health_score: float
     aspect_scores: dict[Aspect, float]
@@ -449,6 +463,7 @@ class TrendPoint:
 @dataclass
 class TrendAnalysis:
     """Trend analysis across multiple analyses."""
+
     video_id: str
     points: list[TrendPoint]
     overall_trend: str  # "improving", "stable", "declining"
@@ -475,7 +490,7 @@ def analyze_trends(
             video_id=video_id,
             points=[],
             overall_trend="stable",
-            aspect_trends={a: "stable" for a in Aspect},
+            aspect_trends=dict.fromkeys(Aspect, "stable"),
             anomalies=[],
         )
 
@@ -493,11 +508,13 @@ def analyze_trends(
             else:
                 aspect_scores[aspect] = 50.0
 
-        points.append(TrendPoint(
-            timestamp=timestamp,
-            health_score=agg.health_score,
-            aspect_scores=aspect_scores,
-        ))
+        points.append(
+            TrendPoint(
+                timestamp=timestamp,
+                health_score=agg.health_score,
+                aspect_scores=aspect_scores,
+            )
+        )
 
     # Calculate overall trend
     first_health = points[0].health_score

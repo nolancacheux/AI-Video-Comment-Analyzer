@@ -1,6 +1,7 @@
 from datetime import datetime
 from enum import Enum
-from pydantic import BaseModel, Field, HttpUrl
+
+from pydantic import BaseModel, Field
 
 
 class SentimentType(str, Enum):
@@ -126,8 +127,10 @@ class ErrorResponse(BaseModel):
 
 # ABSA (Aspect-Based Sentiment Analysis) Models
 
+
 class AspectStatsResponse(BaseModel):
     """Statistics for a single aspect."""
+
     aspect: AspectType
     mention_count: int
     mention_percentage: float
@@ -140,6 +143,7 @@ class AspectStatsResponse(BaseModel):
 
 class RecommendationResponse(BaseModel):
     """An actionable recommendation."""
+
     aspect: AspectType
     priority: str  # "critical", "high", "medium", "low"
     rec_type: str  # "improve", "maintain", "investigate", "celebrate"
@@ -151,6 +155,7 @@ class RecommendationResponse(BaseModel):
 
 class HealthBreakdownResponse(BaseModel):
     """Health score breakdown."""
+
     overall_score: float
     aspect_scores: dict[AspectType, float]
     trend: str  # "improving", "stable", "declining"
@@ -160,6 +165,7 @@ class HealthBreakdownResponse(BaseModel):
 
 class ABSAResponse(BaseModel):
     """Aspect-Based Sentiment Analysis results."""
+
     total_comments_analyzed: int
     aspect_stats: dict[AspectType, AspectStatsResponse]
     dominant_aspects: list[AspectType] = Field(default_factory=list)

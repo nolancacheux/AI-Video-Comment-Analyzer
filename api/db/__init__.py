@@ -4,13 +4,13 @@ Database module for VidInsight.
 
 from .database import Base, engine, get_db, init_db
 from .models import (
-    Video,
-    Comment,
     Analysis,
+    Comment,
+    PriorityLevel,
+    SentimentType,
     Topic,
     TopicComment,
-    SentimentType,
-    PriorityLevel,
+    Video,
 )
 
 __all__ = [

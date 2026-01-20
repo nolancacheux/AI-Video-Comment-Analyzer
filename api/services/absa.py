@@ -15,11 +15,11 @@ and multilingual BERT for sentiment analysis.
 from dataclasses import dataclass, field
 from enum import Enum
 from functools import lru_cache
-from typing import Optional
 
 try:
     import torch
     from transformers import pipeline
+
     ML_AVAILABLE = True
 except ImportError:
     ML_AVAILABLE = False
@@ -27,6 +27,7 @@ except ImportError:
 
 class Aspect(str, Enum):
     """The 5 aspects analyzed in YouTube comments."""
+
     CONTENT = "content"
     AUDIO = "audio"
     PRODUCTION = "production"
@@ -36,6 +37,7 @@ class Aspect(str, Enum):
 
 class AspectSentiment(str, Enum):
     """Sentiment categories for aspects."""
+
     POSITIVE = "positive"
     NEGATIVE = "negative"
     NEUTRAL = "neutral"
@@ -57,26 +59,29 @@ ASPECT_THRESHOLD = 0.25
 @dataclass
 class AspectResult:
     """Result for a single aspect."""
+
     aspect: Aspect
     mentioned: bool
     confidence: float
-    sentiment: Optional[AspectSentiment] = None
-    sentiment_score: Optional[float] = None
+    sentiment: AspectSentiment | None = None
+    sentiment_score: float | None = None
 
 
 @dataclass
 class ABSAResult:
     """Complete ABSA result for a comment."""
+
     text: str
     aspects: dict[Aspect, AspectResult] = field(default_factory=dict)
-    overall_sentiment: Optional[AspectSentiment] = None
-    overall_score: Optional[float] = None
+    overall_sentiment: AspectSentiment | None = None
+    overall_score: float | None = None
     keywords: list[str] = field(default_factory=list)
 
 
 @dataclass
 class ABSABatchProgress:
     """Progress information for batch processing."""
+
     batch_num: int
     total_batches: int
     processed: int
@@ -159,14 +164,39 @@ class ABSAAnalyzer:
         text_lower = text.lower()
 
         positive_words = [
-            "love", "great", "amazing", "awesome", "excellent", "perfect",
-            "fantastic", "wonderful", "helpful", "thanks", "thank",
-            "super", "genial", "merci", "bravo", "magnifique",
+            "love",
+            "great",
+            "amazing",
+            "awesome",
+            "excellent",
+            "perfect",
+            "fantastic",
+            "wonderful",
+            "helpful",
+            "thanks",
+            "thank",
+            "super",
+            "genial",
+            "merci",
+            "bravo",
+            "magnifique",
         ]
         negative_words = [
-            "hate", "terrible", "awful", "worst", "bad", "poor",
-            "horrible", "boring", "annoying", "useless", "waste",
-            "nul", "pourri", "mauvais", "decevant",
+            "hate",
+            "terrible",
+            "awful",
+            "worst",
+            "bad",
+            "poor",
+            "horrible",
+            "boring",
+            "annoying",
+            "useless",
+            "waste",
+            "nul",
+            "pourri",
+            "mauvais",
+            "decevant",
         ]
 
         pos_count = sum(1 for w in positive_words if w in text_lower)
@@ -184,24 +214,67 @@ class ABSAAnalyzer:
 
         aspect_keywords = {
             Aspect.CONTENT: [
-                "content", "information", "explain", "tutorial", "learn",
-                "educational", "topic", "subject", "detail", "thorough",
+                "content",
+                "information",
+                "explain",
+                "tutorial",
+                "learn",
+                "educational",
+                "topic",
+                "subject",
+                "detail",
+                "thorough",
             ],
             Aspect.AUDIO: [
-                "audio", "sound", "music", "volume", "mic", "microphone",
-                "voice", "hear", "loud", "quiet", "background noise",
+                "audio",
+                "sound",
+                "music",
+                "volume",
+                "mic",
+                "microphone",
+                "voice",
+                "hear",
+                "loud",
+                "quiet",
+                "background noise",
             ],
             Aspect.PRODUCTION: [
-                "edit", "editing", "visual", "quality", "graphics",
-                "production", "camera", "lighting", "thumbnail", "effects",
+                "edit",
+                "editing",
+                "visual",
+                "quality",
+                "graphics",
+                "production",
+                "camera",
+                "lighting",
+                "thumbnail",
+                "effects",
             ],
             Aspect.PACING: [
-                "long", "short", "pace", "pacing", "slow", "fast",
-                "length", "duration", "rushed", "dragged", "timing",
+                "long",
+                "short",
+                "pace",
+                "pacing",
+                "slow",
+                "fast",
+                "length",
+                "duration",
+                "rushed",
+                "dragged",
+                "timing",
             ],
             Aspect.PRESENTER: [
-                "presenter", "host", "personality", "charisma", "energy",
-                "delivery", "style", "voice", "funny", "engaging", "boring",
+                "presenter",
+                "host",
+                "personality",
+                "charisma",
+                "energy",
+                "delivery",
+                "style",
+                "voice",
+                "funny",
+                "engaging",
+                "boring",
             ],
         }
 
@@ -228,9 +301,7 @@ class ABSAAnalyzer:
         # Get overall sentiment
         if self._ml_available and self.sentiment:
             sent_result = self.sentiment(truncated_text)[0]
-            overall_sentiment, overall_score = self._map_star_to_sentiment(
-                sent_result["label"]
-            )
+            overall_sentiment, overall_score = self._map_star_to_sentiment(sent_result["label"])
             overall_score = sent_result["score"] * overall_score
         else:
             overall_sentiment, overall_score = self._fallback_sentiment(text)
@@ -306,7 +377,7 @@ class ABSAAnalyzer:
 
         for batch_idx, i in enumerate(range(0, len(texts), batch_size)):
             batch_start = time.perf_counter()
-            batch_texts = texts[i:i + batch_size]
+            batch_texts = texts[i : i + batch_size]
 
             for text in batch_texts:
                 processed += 1
@@ -327,6 +398,7 @@ class ABSAAnalyzer:
 @dataclass
 class AggregatedAspectStats:
     """Aggregated statistics for a single aspect across all comments."""
+
     aspect: Aspect
     mention_count: int
     mention_percentage: float
@@ -340,6 +412,7 @@ class AggregatedAspectStats:
 @dataclass
 class ABSAAggregation:
     """Aggregated ABSA results for a video."""
+
     total_comments: int
     aspect_stats: dict[Aspect, AggregatedAspectStats]
     dominant_aspects: list[Aspect]  # Top 3 most mentioned
@@ -349,7 +422,7 @@ class ABSAAggregation:
 
 def aggregate_absa_results(
     results: list[ABSAResult],
-    engagement_weights: Optional[list[float]] = None,
+    engagement_weights: list[float] | None = None,
 ) -> ABSAAggregation:
     """
     Aggregate individual ABSA results into video-level statistics.
@@ -366,15 +439,15 @@ def aggregate_absa_results(
             total_comments=0,
             aspect_stats={},
             dominant_aspects=[],
-            sentiment_distribution={s: 0 for s in AspectSentiment},
+            sentiment_distribution=dict.fromkeys(AspectSentiment, 0),
             health_score=50.0,
         )
 
     # Initialize counters
-    aspect_mentions = {a: 0 for a in Aspect}
+    aspect_mentions = dict.fromkeys(Aspect, 0)
     aspect_confidences = {a: [] for a in Aspect}
-    aspect_sentiments = {a: {s: 0 for s in AspectSentiment} for a in Aspect}
-    overall_sentiments = {s: 0 for s in AspectSentiment}
+    aspect_sentiments = {a: dict.fromkeys(AspectSentiment, 0) for a in Aspect}
+    overall_sentiments = dict.fromkeys(AspectSentiment, 0)
 
     weights = engagement_weights or [1.0] * len(results)
     total_weight = sum(weights)
@@ -429,10 +502,10 @@ def aggregate_absa_results(
     # Aspects with more mentions contribute more
     total_mentions = sum(aspect_stats[a].mention_count for a in Aspect)
     if total_mentions > 0:
-        weighted_sentiment = sum(
-            aspect_stats[a].sentiment_score * aspect_stats[a].mention_count
-            for a in Aspect
-        ) / total_mentions
+        weighted_sentiment = (
+            sum(aspect_stats[a].sentiment_score * aspect_stats[a].mention_count for a in Aspect)
+            / total_mentions
+        )
         # Convert from [-1, 1] to [0, 100]
         health_score = (weighted_sentiment + 1) * 50
     else:

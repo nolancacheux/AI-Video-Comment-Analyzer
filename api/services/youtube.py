@@ -1,8 +1,8 @@
+import json
 import re
 import subprocess
-import json
-from datetime import datetime
 from dataclasses import dataclass
+from datetime import datetime
 
 
 @dataclass
@@ -98,7 +98,9 @@ class YouTubeExtractor:
                 channel_id=data.get("channel_id", ""),
                 channel_title=data.get("channel", data.get("uploader", "Unknown")),
                 description=data.get("description", ""),
-                thumbnail_url=data.get("thumbnail", f"https://i.ytimg.com/vi/{video_id}/maxresdefault.jpg"),
+                thumbnail_url=data.get(
+                    "thumbnail", f"https://i.ytimg.com/vi/{video_id}/maxresdefault.jpg"
+                ),
                 published_at=published_at,
             )
 
@@ -157,7 +159,9 @@ class YouTubeExtractor:
                         text=comment.get("text", ""),
                         like_count=comment.get("like_count", 0) or 0,
                         published_at=published_at,
-                        parent_id=comment.get("parent") if comment.get("parent") != "root" else None,
+                        parent_id=comment.get("parent")
+                        if comment.get("parent") != "root"
+                        else None,
                     )
                 )
 

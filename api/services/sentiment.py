@@ -1,5 +1,4 @@
 import re
-import random
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
@@ -7,6 +6,7 @@ from functools import lru_cache
 try:
     import torch
     from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
     ML_AVAILABLE = True
 except ImportError:
     ML_AVAILABLE = False
@@ -54,17 +54,58 @@ SUGGESTION_PATTERNS = [
 ]
 
 POSITIVE_KEYWORDS = [
-    "love", "great", "amazing", "awesome", "excellent", "perfect", "best",
-    "fantastic", "wonderful", "thank", "thanks", "helpful", "appreciate",
-    "good", "nice", "cool", "brilliant", "beautiful", "super", "genial",
-    "merci", "bravo", "magnifique", "parfait", "incroyable",
+    "love",
+    "great",
+    "amazing",
+    "awesome",
+    "excellent",
+    "perfect",
+    "best",
+    "fantastic",
+    "wonderful",
+    "thank",
+    "thanks",
+    "helpful",
+    "appreciate",
+    "good",
+    "nice",
+    "cool",
+    "brilliant",
+    "beautiful",
+    "super",
+    "genial",
+    "merci",
+    "bravo",
+    "magnifique",
+    "parfait",
+    "incroyable",
 ]
 
 NEGATIVE_KEYWORDS = [
-    "hate", "terrible", "awful", "worst", "bad", "poor", "horrible",
-    "disappointing", "sucks", "boring", "annoying", "useless", "waste",
-    "wrong", "stupid", "ridiculous", "pathetic", "trash", "garbage",
-    "nul", "pourri", "mauvais", "horrible", "decevant",
+    "hate",
+    "terrible",
+    "awful",
+    "worst",
+    "bad",
+    "poor",
+    "horrible",
+    "disappointing",
+    "sucks",
+    "boring",
+    "annoying",
+    "useless",
+    "waste",
+    "wrong",
+    "stupid",
+    "ridiculous",
+    "pathetic",
+    "trash",
+    "garbage",
+    "nul",
+    "pourri",
+    "mauvais",
+    "horrible",
+    "decevant",
 ]
 
 COMPILED_SUGGESTION_PATTERNS = [re.compile(p, re.IGNORECASE) for p in SUGGESTION_PATTERNS]

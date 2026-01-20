@@ -4,18 +4,17 @@ SQLAlchemy database models for VidInsight.
 
 from datetime import datetime
 from enum import Enum as PyEnum
-from typing import Optional
 
 from sqlalchemy import (
+    JSON,
     Column,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
     Integer,
     String,
     Text,
-    Float,
-    DateTime,
-    ForeignKey,
-    Enum,
-    JSON,
 )
 from sqlalchemy.orm import relationship
 
@@ -67,7 +66,9 @@ class Comment(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     video = relationship("Video", back_populates="comments")
-    topic_associations = relationship("TopicComment", back_populates="comment", cascade="all, delete-orphan")
+    topic_associations = relationship(
+        "TopicComment", back_populates="comment", cascade="all, delete-orphan"
+    )
 
 
 class Analysis(Base):
@@ -106,7 +107,9 @@ class Topic(Base):
     recommendation = Column(Text)
 
     analysis = relationship("Analysis", back_populates="topics")
-    comment_associations = relationship("TopicComment", back_populates="topic", cascade="all, delete-orphan")
+    comment_associations = relationship(
+        "TopicComment", back_populates="topic", cascade="all, delete-orphan"
+    )
 
 
 class TopicComment(Base):

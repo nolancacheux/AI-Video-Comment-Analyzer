@@ -1,47 +1,43 @@
-import json
 import asyncio
-from datetime import datetime
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from api.db import get_db, Video, Comment, Analysis, Topic, TopicComment
-from api.db.models import SentimentType as DBSentimentType, PriorityLevel as DBPriorityLevel
+from api.db import Analysis, Comment, Topic, TopicComment, Video, get_db
+from api.db.models import PriorityLevel as DBPriorityLevel
+from api.db.models import SentimentType as DBSentimentType
 from api.models import (
-    AnalyzeRequest,
-    VideoResponse,
-    CommentResponse,
-    TopicResponse,
-    SentimentSummary,
-    MLMetadata,
-    AnalysisResponse,
-    ProgressEvent,
-    AnalysisHistoryItem,
-    ErrorResponse,
-    SentimentType,
-    PriorityLevel,
-    AnalysisStage,
-    AspectType,
-    AspectStatsResponse,
-    RecommendationResponse,
-    HealthBreakdownResponse,
     ABSAResponse,
+    AnalysisHistoryItem,
+    AnalysisResponse,
+    AnalysisStage,
+    AnalyzeRequest,
+    AspectStatsResponse,
+    AspectType,
+    CommentResponse,
+    HealthBreakdownResponse,
+    MLMetadata,
+    PriorityLevel,
+    ProgressEvent,
+    RecommendationResponse,
+    SentimentSummary,
+    SentimentType,
+    TopicResponse,
+    VideoResponse,
 )
 from api.services import (
-    YouTubeExtractor,
-    YouTubeExtractionError,
     CommentsDisabledError,
-    VideoNotFoundError,
-    get_sentiment_analyzer,
-    get_topic_modeler,
     SentimentCategory,
-    get_absa_analyzer,
+    VideoNotFoundError,
+    YouTubeExtractionError,
+    YouTubeExtractor,
     aggregate_absa_results,
     generate_insight_report,
-    Aspect,
-    AspectSentiment,
+    get_absa_analyzer,
+    get_sentiment_analyzer,
+    get_topic_modeler,
 )
 
 router = APIRouter(prefix="/api/analysis", tags=["analysis"])
@@ -54,54 +50,66 @@ def format_sse(event: ProgressEvent) -> str:
 async def run_analysis(url: str, db: Session) -> AsyncGenerator[str, None]:
     extractor = YouTubeExtractor()
 
-    yield format_sse(ProgressEvent(
-        stage=AnalysisStage.VALIDATING,
-        message="Validating YouTube URL...",
-        progress=5,
-    ))
+    yield format_sse(
+        ProgressEvent(
+            stage=AnalysisStage.VALIDATING,
+            message="Validating YouTube URL...",
+            progress=5,
+        )
+    )
     await asyncio.sleep(0.1)
 
     video_id = extractor.extract_video_id(url)
     if not video_id:
-        yield format_sse(ProgressEvent(
-            stage=AnalysisStage.ERROR,
-            message="Invalid YouTube URL",
-            progress=0,
-            data={"error": "Please provide a valid YouTube URL"},
-        ))
+        yield format_sse(
+            ProgressEvent(
+                stage=AnalysisStage.ERROR,
+                message="Invalid YouTube URL",
+                progress=0,
+                data={"error": "Please provide a valid YouTube URL"},
+            )
+        )
         return
 
-    yield format_sse(ProgressEvent(
-        stage=AnalysisStage.FETCHING_METADATA,
-        message="Fetching video metadata...",
-        progress=10,
-    ))
+    yield format_sse(
+        ProgressEvent(
+            stage=AnalysisStage.FETCHING_METADATA,
+            message="Fetching video metadata...",
+            progress=10,
+        )
+    )
 
     try:
         metadata = extractor.get_video_metadata(url)
     except VideoNotFoundError as e:
-        yield format_sse(ProgressEvent(
-            stage=AnalysisStage.ERROR,
-            message="Video not found",
-            progress=0,
-            data={"error": str(e)},
-        ))
+        yield format_sse(
+            ProgressEvent(
+                stage=AnalysisStage.ERROR,
+                message="Video not found",
+                progress=0,
+                data={"error": str(e)},
+            )
+        )
         return
     except YouTubeExtractionError as e:
-        yield format_sse(ProgressEvent(
-            stage=AnalysisStage.ERROR,
-            message="Failed to fetch video",
-            progress=0,
-            data={"error": str(e)},
-        ))
+        yield format_sse(
+            ProgressEvent(
+                stage=AnalysisStage.ERROR,
+                message="Failed to fetch video",
+                progress=0,
+                data={"error": str(e)},
+            )
+        )
         return
 
-    yield format_sse(ProgressEvent(
-        stage=AnalysisStage.FETCHING_METADATA,
-        message=f"Found: {metadata.title}",
-        progress=20,
-        data={"video_title": metadata.title, "video_id": metadata.id},
-    ))
+    yield format_sse(
+        ProgressEvent(
+            stage=AnalysisStage.FETCHING_METADATA,
+            message=f"Found: {metadata.title}",
+            progress=20,
+            data={"video_title": metadata.title, "video_id": metadata.id},
+        )
+    )
 
     video = db.query(Video).filter(Video.id == metadata.id).first()
     if not video:
@@ -117,53 +125,66 @@ async def run_analysis(url: str, db: Session) -> AsyncGenerator[str, None]:
         db.add(video)
         db.commit()
 
-    yield format_sse(ProgressEvent(
-        stage=AnalysisStage.EXTRACTING_COMMENTS,
-        message="Extracting comments...",
-        progress=30,
-    ))
+    yield format_sse(
+        ProgressEvent(
+            stage=AnalysisStage.EXTRACTING_COMMENTS,
+            message="Extracting comments...",
+            progress=30,
+        )
+    )
 
     try:
         comments_data = extractor.get_comments(url)
     except CommentsDisabledError:
-        yield format_sse(ProgressEvent(
-            stage=AnalysisStage.ERROR,
-            message="Comments are disabled",
-            progress=0,
-            data={"error": "Comments are disabled for this video"},
-        ))
+        yield format_sse(
+            ProgressEvent(
+                stage=AnalysisStage.ERROR,
+                message="Comments are disabled",
+                progress=0,
+                data={"error": "Comments are disabled for this video"},
+            )
+        )
         return
     except YouTubeExtractionError as e:
-        yield format_sse(ProgressEvent(
-            stage=AnalysisStage.ERROR,
-            message="Failed to extract comments",
-            progress=0,
-            data={"error": str(e)},
-        ))
+        yield format_sse(
+            ProgressEvent(
+                stage=AnalysisStage.ERROR,
+                message="Failed to extract comments",
+                progress=0,
+                data={"error": str(e)},
+            )
+        )
         return
 
     if not comments_data:
-        yield format_sse(ProgressEvent(
-            stage=AnalysisStage.ERROR,
-            message="No comments found",
-            progress=0,
-            data={"error": "This video has no comments to analyze"},
-        ))
+        yield format_sse(
+            ProgressEvent(
+                stage=AnalysisStage.ERROR,
+                message="No comments found",
+                progress=0,
+                data={"error": "This video has no comments to analyze"},
+            )
+        )
         return
 
-    yield format_sse(ProgressEvent(
-        stage=AnalysisStage.EXTRACTING_COMMENTS,
-        message=f"Found {len(comments_data)} comments",
-        progress=40,
-    ))
+    yield format_sse(
+        ProgressEvent(
+            stage=AnalysisStage.EXTRACTING_COMMENTS,
+            message=f"Found {len(comments_data)} comments",
+            progress=40,
+        )
+    )
 
-    yield format_sse(ProgressEvent(
-        stage=AnalysisStage.ANALYZING_SENTIMENT,
-        message="Loading BERT model...",
-        progress=45,
-    ))
+    yield format_sse(
+        ProgressEvent(
+            stage=AnalysisStage.ANALYZING_SENTIMENT,
+            message="Loading BERT model...",
+            progress=45,
+        )
+    )
 
     import time
+
     analysis_start = time.perf_counter()
 
     analyzer = get_sentiment_analyzer()
@@ -176,7 +197,9 @@ async def run_analysis(url: str, db: Session) -> AsyncGenerator[str, None]:
 
     for result, batch_progress in analyzer.analyze_batch_with_progress(texts):
         sentiment_results.append(result)
-        total_tokens += batch_progress.tokens_in_batch // max(1, batch_progress.processed - last_update)
+        total_tokens += batch_progress.tokens_in_batch // max(
+            1, batch_progress.processed - last_update
+        )
 
         # Send progress update every 10 comments or on batch completion
         if batch_progress.processed % 10 == 0 or batch_progress.processed == batch_progress.total:
@@ -184,36 +207,42 @@ async def run_analysis(url: str, db: Session) -> AsyncGenerator[str, None]:
             speed = batch_progress.processed / elapsed if elapsed > 0 else 0
             progress_pct = 45 + int((batch_progress.processed / batch_progress.total) * 20)
 
-            yield format_sse(ProgressEvent(
-                stage=AnalysisStage.ANALYZING_SENTIMENT,
-                message=f"Analyzed {batch_progress.processed}/{batch_progress.total} comments",
-                progress=progress_pct,
-                data={
-                    "ml_batch": batch_progress.batch_num,
-                    "ml_total_batches": batch_progress.total_batches,
-                    "ml_processed": batch_progress.processed,
-                    "ml_total": batch_progress.total,
-                    "ml_speed": round(speed, 1),
-                    "ml_tokens": total_tokens,
-                    "ml_batch_time_ms": round(batch_progress.batch_time_ms, 1),
-                    "ml_elapsed_seconds": round(elapsed, 2),
-                },
-            ))
+            yield format_sse(
+                ProgressEvent(
+                    stage=AnalysisStage.ANALYZING_SENTIMENT,
+                    message=f"Analyzed {batch_progress.processed}/{batch_progress.total} comments",
+                    progress=progress_pct,
+                    data={
+                        "ml_batch": batch_progress.batch_num,
+                        "ml_total_batches": batch_progress.total_batches,
+                        "ml_processed": batch_progress.processed,
+                        "ml_total": batch_progress.total,
+                        "ml_speed": round(speed, 1),
+                        "ml_tokens": total_tokens,
+                        "ml_batch_time_ms": round(batch_progress.batch_time_ms, 1),
+                        "ml_elapsed_seconds": round(elapsed, 2),
+                    },
+                )
+            )
             await asyncio.sleep(0.01)  # Small yield to allow SSE to flush
             last_update = batch_progress.processed
 
     analysis_time = time.perf_counter() - analysis_start
 
-    yield format_sse(ProgressEvent(
-        stage=AnalysisStage.ANALYZING_SENTIMENT,
-        message=f"Sentiment analysis complete in {analysis_time:.1f}s",
-        progress=65,
-        data={
-            "ml_processing_time_seconds": round(analysis_time, 2),
-            "ml_total_tokens": total_tokens,
-            "ml_comments_per_second": round(len(texts) / analysis_time, 1) if analysis_time > 0 else 0,
-        },
-    ))
+    yield format_sse(
+        ProgressEvent(
+            stage=AnalysisStage.ANALYZING_SENTIMENT,
+            message=f"Sentiment analysis complete in {analysis_time:.1f}s",
+            progress=65,
+            data={
+                "ml_processing_time_seconds": round(analysis_time, 2),
+                "ml_total_tokens": total_tokens,
+                "ml_comments_per_second": round(len(texts) / analysis_time, 1)
+                if analysis_time > 0
+                else 0,
+            },
+        )
+    )
 
     db.query(Comment).filter(Comment.video_id == video.id).delete()
     db.commit()
@@ -243,28 +272,34 @@ async def run_analysis(url: str, db: Session) -> AsyncGenerator[str, None]:
     db.commit()
 
     positive_comments = [
-        (c, cd) for c, cd, sr in zip(comment_objects, comments_data, sentiment_results)
+        (c, cd)
+        for c, cd, sr in zip(comment_objects, comments_data, sentiment_results)
         if sr.category == SentimentCategory.POSITIVE
     ]
     negative_comments = [
-        (c, cd) for c, cd, sr in zip(comment_objects, comments_data, sentiment_results)
+        (c, cd)
+        for c, cd, sr in zip(comment_objects, comments_data, sentiment_results)
         if sr.category == SentimentCategory.NEGATIVE
     ]
     suggestion_comments = [
-        (c, cd) for c, cd, sr in zip(comment_objects, comments_data, sentiment_results)
+        (c, cd)
+        for c, cd, sr in zip(comment_objects, comments_data, sentiment_results)
         if sr.category == SentimentCategory.SUGGESTION
     ]
     neutral_comments = [
-        (c, cd) for c, cd, sr in zip(comment_objects, comments_data, sentiment_results)
+        (c, cd)
+        for c, cd, sr in zip(comment_objects, comments_data, sentiment_results)
         if sr.category == SentimentCategory.NEUTRAL
     ]
 
     # ABSA (Aspect-Based Sentiment Analysis)
-    yield format_sse(ProgressEvent(
-        stage=AnalysisStage.ANALYZING_ASPECTS,
-        message="Analyzing aspects (content, audio, production, pacing, presenter)...",
-        progress=66,
-    ))
+    yield format_sse(
+        ProgressEvent(
+            stage=AnalysisStage.ANALYZING_ASPECTS,
+            message="Analyzing aspects (content, audio, production, pacing, presenter)...",
+            progress=66,
+        )
+    )
 
     absa_start = time.perf_counter()
     absa_analyzer = get_absa_analyzer()
@@ -273,14 +308,18 @@ async def run_analysis(url: str, db: Session) -> AsyncGenerator[str, None]:
 
     for i, (result, progress) in enumerate(absa_analyzer.analyze_batch_with_progress(texts)):
         absa_results.append(result)
-        engagement_weights.append(float(comments_data[i].like_count + 1))  # +1 to avoid zero weights
+        engagement_weights.append(
+            float(comments_data[i].like_count + 1)
+        )  # +1 to avoid zero weights
 
         if progress.processed % 20 == 0 or progress.processed == progress.total:
-            yield format_sse(ProgressEvent(
-                stage=AnalysisStage.ANALYZING_ASPECTS,
-                message=f"Aspect analysis: {progress.processed}/{progress.total} comments",
-                progress=66 + int((progress.processed / progress.total) * 4),
-            ))
+            yield format_sse(
+                ProgressEvent(
+                    stage=AnalysisStage.ANALYZING_ASPECTS,
+                    message=f"Aspect analysis: {progress.processed}/{progress.total} comments",
+                    progress=66 + int((progress.processed / progress.total) * 4),
+                )
+            )
             await asyncio.sleep(0.01)
 
     absa_time = time.perf_counter() - absa_start
@@ -289,21 +328,25 @@ async def run_analysis(url: str, db: Session) -> AsyncGenerator[str, None]:
     absa_aggregation = aggregate_absa_results(absa_results, engagement_weights)
     insight_report = generate_insight_report(video.id, absa_aggregation)
 
-    yield format_sse(ProgressEvent(
-        stage=AnalysisStage.ANALYZING_ASPECTS,
-        message=f"Aspect analysis complete in {absa_time:.1f}s (health score: {absa_aggregation.health_score:.0f}/100)",
-        progress=70,
-        data={
-            "absa_health_score": absa_aggregation.health_score,
-            "absa_dominant_aspects": [a.value for a in absa_aggregation.dominant_aspects],
-        },
-    ))
+    yield format_sse(
+        ProgressEvent(
+            stage=AnalysisStage.ANALYZING_ASPECTS,
+            message=f"Aspect analysis complete in {absa_time:.1f}s (health score: {absa_aggregation.health_score:.0f}/100)",
+            progress=70,
+            data={
+                "absa_health_score": absa_aggregation.health_score,
+                "absa_dominant_aspects": [a.value for a in absa_aggregation.dominant_aspects],
+            },
+        )
+    )
 
-    yield format_sse(ProgressEvent(
-        stage=AnalysisStage.DETECTING_TOPICS,
-        message="Detecting topics...",
-        progress=72,
-    ))
+    yield format_sse(
+        ProgressEvent(
+            stage=AnalysisStage.DETECTING_TOPICS,
+            message="Detecting topics...",
+            progress=72,
+        )
+    )
 
     topic_modeler = get_topic_modeler()
     all_topics = []
@@ -321,11 +364,13 @@ async def run_analysis(url: str, db: Session) -> AsyncGenerator[str, None]:
                 t_comments = [comments_list[i][0] for i in t.comment_indices]
                 all_topics.append((t, sentiment_type, t_comments))
 
-    yield format_sse(ProgressEvent(
-        stage=AnalysisStage.GENERATING_INSIGHTS,
-        message="Generating insights and recommendations...",
-        progress=85,
-    ))
+    yield format_sse(
+        ProgressEvent(
+            stage=AnalysisStage.GENERATING_INSIGHTS,
+            message="Generating insights and recommendations...",
+            progress=85,
+        )
+    )
 
     # Serialize ABSA data for storage
     absa_json = {
@@ -393,9 +438,7 @@ async def run_analysis(url: str, db: Session) -> AsyncGenerator[str, None]:
     db.add(analysis)
     db.commit()
 
-    negative_topics = [
-        (t, st, cs) for t, st, cs in all_topics if st == DBSentimentType.NEGATIVE
-    ]
+    negative_topics = [(t, st, cs) for t, st, cs in all_topics if st == DBSentimentType.NEGATIVE]
     negative_topics.sort(key=lambda x: x[0].total_engagement, reverse=True)
 
     suggestion_topics = [
@@ -451,12 +494,14 @@ async def run_analysis(url: str, db: Session) -> AsyncGenerator[str, None]:
 
         topic_objects.append((topic, cs))
 
-    yield format_sse(ProgressEvent(
-        stage=AnalysisStage.COMPLETE,
-        message="Analysis complete!",
-        progress=100,
-        data={"analysis_id": analysis.id},
-    ))
+    yield format_sse(
+        ProgressEvent(
+            stage=AnalysisStage.COMPLETE,
+            message="Analysis complete!",
+            progress=100,
+            data={"analysis_id": analysis.id},
+        )
+    )
 
 
 @router.post("/analyze")
@@ -483,7 +528,9 @@ async def get_analysis_result(analysis_id: int, db: Session = Depends(get_db)):
     topic_responses = []
     for topic in topics:
         sample_comments = []
-        associations = db.query(TopicComment).filter(TopicComment.topic_id == topic.id).limit(3).all()
+        associations = (
+            db.query(TopicComment).filter(TopicComment.topic_id == topic.id).limit(3).all()
+        )
         for assoc in associations:
             comment = db.query(Comment).filter(Comment.id == assoc.comment_id).first()
             if comment:
@@ -493,15 +540,17 @@ async def get_analysis_result(analysis_id: int, db: Session = Depends(get_db)):
                     DBSentimentType.NEUTRAL: SentimentType.NEUTRAL,
                     DBSentimentType.SUGGESTION: SentimentType.SUGGESTION,
                 }
-                sample_comments.append(CommentResponse(
-                    id=comment.id,
-                    text=comment.text,
-                    author_name=comment.author_name,
-                    like_count=comment.like_count,
-                    sentiment=sentiment_map.get(comment.sentiment),
-                    confidence=comment.sentiment_score,
-                    published_at=comment.published_at,
-                ))
+                sample_comments.append(
+                    CommentResponse(
+                        id=comment.id,
+                        text=comment.text,
+                        author_name=comment.author_name,
+                        like_count=comment.like_count,
+                        sentiment=sentiment_map.get(comment.sentiment),
+                        confidence=comment.sentiment_score,
+                        published_at=comment.published_at,
+                    )
+                )
 
         sentiment_map = {
             DBSentimentType.POSITIVE: SentimentType.POSITIVE,
@@ -515,18 +564,22 @@ async def get_analysis_result(analysis_id: int, db: Session = Depends(get_db)):
             DBPriorityLevel.LOW: PriorityLevel.LOW,
         }
 
-        topic_responses.append(TopicResponse(
-            id=topic.id,
-            name=topic.name,
-            sentiment_category=sentiment_map.get(topic.sentiment_category, SentimentType.NEUTRAL),
-            mention_count=topic.mention_count,
-            total_engagement=topic.total_engagement,
-            priority=priority_map.get(topic.priority) if topic.priority else None,
-            priority_score=topic.priority_score or 0.0,
-            keywords=topic.keywords or [],
-            recommendation=topic.recommendation,
-            sample_comments=sample_comments,
-        ))
+        topic_responses.append(
+            TopicResponse(
+                id=topic.id,
+                name=topic.name,
+                sentiment_category=sentiment_map.get(
+                    topic.sentiment_category, SentimentType.NEUTRAL
+                ),
+                mention_count=topic.mention_count,
+                total_engagement=topic.total_engagement,
+                priority=priority_map.get(topic.priority) if topic.priority else None,
+                priority_score=topic.priority_score or 0.0,
+                keywords=topic.keywords or [],
+                recommendation=topic.recommendation,
+                sample_comments=sample_comments,
+            )
+        )
 
     # Calculate ML metadata from comments
     comments = db.query(Comment).filter(Comment.video_id == video.id).all()
@@ -571,9 +624,7 @@ async def get_analysis_result(analysis_id: int, db: Session = Depends(get_db)):
             )
 
         # Build health breakdown
-        aspect_scores = {
-            AspectType(k): v for k, v in health_data.get("aspect_scores", {}).items()
-        }
+        aspect_scores = {AspectType(k): v for k, v in health_data.get("aspect_scores", {}).items()}
         health = HealthBreakdownResponse(
             overall_score=health_data.get("overall_score", 50.0),
             aspect_scores=aspect_scores,
@@ -636,12 +687,7 @@ async def get_analysis_result(analysis_id: int, db: Session = Depends(get_db)):
 
 @router.get("/history", response_model=list[AnalysisHistoryItem])
 async def get_analysis_history(limit: int = 10, db: Session = Depends(get_db)):
-    analyses = (
-        db.query(Analysis)
-        .order_by(Analysis.analyzed_at.desc())
-        .limit(limit)
-        .all()
-    )
+    analyses = db.query(Analysis).order_by(Analysis.analyzed_at.desc()).limit(limit).all()
 
     return [
         AnalysisHistoryItem(
