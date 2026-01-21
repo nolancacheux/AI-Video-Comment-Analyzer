@@ -1,5 +1,5 @@
 """
-Database module for VidInsight.
+Database module for AI-Video-Comment-Analyzer.
 """
 
 from .database import Base, engine, get_db, init_db

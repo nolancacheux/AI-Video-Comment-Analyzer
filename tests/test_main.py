@@ -62,7 +62,7 @@ class TestRootEndpoint:
         response = client.get("/")
         assert response.status_code == 200
         data = response.json()
-        assert data["message"] == "VidInsight API"
+        assert data["message"] == "AI-Video-Comment-Analyzer API"
         assert "version" in data
 
 

@@ -14,7 +14,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="VidInsight API",
+    title="AI-Video-Comment-Analyzer API",
     description="YouTube comment analysis API that extracts, categorizes, and prioritizes audience feedback",
     version="0.1.0",
     lifespan=lifespan,
@@ -35,7 +35,7 @@ app.include_router(analysis_router)
 
 @app.get("/")
 async def root():
-    return {"message": "VidInsight API", "version": "0.1.0"}
+    return {"message": "AI-Video-Comment-Analyzer API", "version": "0.1.0"}
 
 
 @app.get("/health")

@@ -1,4 +1,4 @@
-# VidInsight
+# AI-Video-Comment-Analyzer
 
 AI-powered YouTube comment analysis tool with sentiment detection, topic modeling, and aspect-based analysis.
 
@@ -66,7 +66,7 @@ API available at [http://localhost:8000](http://localhost:8000)
 ## Project Structure
 
 ```
-vidinsight/
+AI-Video-Comment-Analyzer/
 ├── src/                    # Next.js frontend
 │   ├── components/         # React components
 │   │   ├── charts/         # Recharts visualizations

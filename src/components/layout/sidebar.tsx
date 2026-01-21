@@ -67,7 +67,7 @@ export function Sidebar({
       {/* Header with toggle */}
       <div className="flex items-center justify-between p-2 border-b">
         {!collapsed && (
-          <span className="text-sm font-semibold text-slate-700">VidInsight</span>
+          <span className="text-sm font-semibold text-slate-700">AI-Video-Comment-Analyzer</span>
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}

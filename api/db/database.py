@@ -5,7 +5,7 @@ Database configuration and session management.
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-DATABASE_URL = "sqlite:///./vidinsight.db"
+DATABASE_URL = "sqlite:///./ai-video-comment-analyzer.db"
 
 engine = create_engine(
     DATABASE_URL,

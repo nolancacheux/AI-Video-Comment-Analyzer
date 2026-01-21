@@ -1,1 +1,1 @@
-# VidInsight API Package
+# AI-Video-Comment-Analyzer API Package

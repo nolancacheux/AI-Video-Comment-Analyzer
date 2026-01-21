@@ -1,5 +1,5 @@
 """
-SQLAlchemy database models for VidInsight.
+SQLAlchemy database models for AI-Video-Comment-Analyzer.
 """
 
 from datetime import datetime

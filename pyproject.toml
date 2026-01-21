@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "vidinsight"
+name = "ai-video-comment-analyzer"
 version = "0.1.0"
 description = "YouTube comment analysis tool that extracts, categorizes, and prioritizes audience feedback"
 readme = "README.md"

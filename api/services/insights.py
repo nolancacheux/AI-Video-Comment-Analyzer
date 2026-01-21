@@ -1,5 +1,5 @@
 """
-Insights Service - Intelligence Layer for VidInsight
+Insights Service - Intelligence Layer for AI-Video-Comment-Analyzer
 
 Provides:
 - Actionable recommendations based on ABSA results

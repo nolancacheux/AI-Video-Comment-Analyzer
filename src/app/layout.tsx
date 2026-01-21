@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "VidInsight",
+  title: "AI-Video-Comment-Analyzer",
   description: "YouTube comment analysis tool that extracts, categorizes, and prioritizes audience feedback",
 };
 

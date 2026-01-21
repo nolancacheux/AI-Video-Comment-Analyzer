@@ -180,7 +180,7 @@ export default function Home() {
             <div className="h-full flex items-center justify-center">
               <div className="w-full max-w-xl space-y-6">
                 <div className="text-center">
-                  <h1 className="text-3xl font-bold tracking-tight">VidInsight</h1>
+                  <h1 className="text-3xl font-bold tracking-tight">AI-Video-Comment-Analyzer</h1>
                   <p className="mt-2 text-muted-foreground">
                     AI-powered YouTube comment analysis with sentiment detection and topic modeling
                   </p>
