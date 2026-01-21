@@ -107,7 +107,7 @@ class ABSAAnalyzer:
     ZERO_SHOT_MODEL = "facebook/bart-large-mnli"
     SENTIMENT_MODEL = "nlptown/bert-base-multilingual-uncased-sentiment"
 
-    def __init__(self, use_ml: bool = True):
+    def __init__(self, use_ml: bool = False):
         self._zero_shot = None
         self._sentiment = None
         self._device = None
@@ -540,10 +540,10 @@ def aggregate_absa_results(
 
 
 @lru_cache(maxsize=1)
-def get_absa_analyzer(use_ml: bool = True) -> ABSAAnalyzer:
+def get_absa_analyzer(use_ml: bool = False) -> ABSAAnalyzer:
     """Get singleton ABSA analyzer instance.
 
     Args:
-        use_ml: If True, use ML models for aspect detection. Default True.
+        use_ml: If True, use ML models for aspect detection. Default False (fast keyword mode).
     """
     return ABSAAnalyzer(use_ml=use_ml)
