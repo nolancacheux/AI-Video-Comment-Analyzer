@@ -1,0 +1,106 @@
+"""
+Central configuration module.
+
+Loads all settings from environment variables with sensible defaults.
+Use .env file for local development (see .env.example).
+"""
+
+import os
+from functools import lru_cache
+
+from dotenv import load_dotenv
+
+# Load .env file
+load_dotenv()
+
+
+def get_bool(key: str, default: bool = False) -> bool:
+    """Get boolean from env var (supports true/false/1/0)."""
+    value = os.getenv(key, str(default)).lower()
+    return value in ("true", "1", "yes", "on")
+
+
+def get_int(key: str, default: int) -> int:
+    """Get integer from env var."""
+    return int(os.getenv(key, str(default)))
+
+
+def get_float(key: str, default: float) -> float:
+    """Get float from env var."""
+    return float(os.getenv(key, str(default)))
+
+
+def get_str(key: str, default: str = "") -> str:
+    """Get string from env var."""
+    return os.getenv(key, default)
+
+
+def get_list(key: str, default: str = "", separator: str = ",") -> list[str]:
+    """Get list from comma-separated env var."""
+    value = os.getenv(key, default)
+    if not value:
+        return []
+    return [item.strip() for item in value.split(separator)]
+
+
+@lru_cache(maxsize=1)
+class Settings:
+    """Application settings loaded from environment variables."""
+
+    # === Hugging Face ===
+    HF_TOKEN: str = get_str("HF_TOKEN")
+    HF_ENABLED: bool = get_bool("HF_ENABLED", True)
+
+    # === Database ===
+    DATABASE_URL: str = get_str("DATABASE_URL", "sqlite:///./ai-video-comment-analyzer.db")
+
+    # === API Server ===
+    API_PORT: int = get_int("API_PORT", 8000)
+    CORS_ORIGINS: list[str] = get_list("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001")
+
+    # === YouTube Extraction ===
+    YOUTUBE_MAX_COMMENTS: int = get_int("YOUTUBE_MAX_COMMENTS", 100)
+    YOUTUBE_SEARCH_MAX_RESULTS: int = get_int("YOUTUBE_SEARCH_MAX_RESULTS", 5)
+    YOUTUBE_METADATA_TIMEOUT: int = get_int("YOUTUBE_METADATA_TIMEOUT", 30)
+    YOUTUBE_COMMENTS_TIMEOUT: int = get_int("YOUTUBE_COMMENTS_TIMEOUT", 120)
+    YOUTUBE_SEARCH_TIMEOUT: int = get_int("YOUTUBE_SEARCH_TIMEOUT", 30)
+
+    # === ML Models ===
+    SENTIMENT_MODEL: str = get_str("SENTIMENT_MODEL", "nlptown/bert-base-multilingual-uncased-sentiment")
+    ZERO_SHOT_MODEL: str = get_str("ZERO_SHOT_MODEL", "facebook/bart-large-mnli")
+    EMBEDDING_MODEL: str = get_str("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
+
+    # === ML Processing ===
+    SENTIMENT_BATCH_SIZE: int = get_int("SENTIMENT_BATCH_SIZE", 32)
+    SENTIMENT_MAX_LENGTH: int = get_int("SENTIMENT_MAX_LENGTH", 512)
+    ABSA_BATCH_SIZE: int = get_int("ABSA_BATCH_SIZE", 16)
+    ABSA_MAX_LENGTH: int = get_int("ABSA_MAX_LENGTH", 512)
+    ML_PROGRESS_UPDATE_FREQUENCY: int = get_int("ML_PROGRESS_UPDATE_FREQUENCY", 10)
+
+    # === Topic Modeling ===
+    MAX_TOPICS: int = get_int("MAX_TOPICS", 5)
+    MAX_TOPICS_ML: int = get_int("MAX_TOPICS_ML", 10)
+    TOPIC_KEYWORDS_COUNT: int = get_int("TOPIC_KEYWORDS_COUNT", 5)
+    TOPIC_MIN_COMMENTS: int = get_int("TOPIC_MIN_COMMENTS", 2)
+
+    # === Thresholds ===
+    ASPECT_DETECTION_THRESHOLD: float = get_float("ASPECT_DETECTION_THRESHOLD", 0.2)
+    SENTIMENT_NEGATIVE_THRESHOLD: float = get_float("SENTIMENT_NEGATIVE_THRESHOLD", -0.2)
+    SENTIMENT_POSITIVE_THRESHOLD: float = get_float("SENTIMENT_POSITIVE_THRESHOLD", 0.3)
+    SENTIMENT_CRITICAL_THRESHOLD: float = get_float("SENTIMENT_CRITICAL_THRESHOLD", -0.5)
+    ASPECT_MENTION_THRESHOLD: int = get_int("ASPECT_MENTION_THRESHOLD", 10)
+
+    # === Display Limits ===
+    HISTORY_LIMIT: int = get_int("HISTORY_LIMIT", 10)
+    SEARCH_RESULTS_LIMIT: int = get_int("SEARCH_RESULTS_LIMIT", 5)
+    MAX_RECOMMENDATIONS: int = get_int("MAX_RECOMMENDATIONS", 5)
+    RESULTS_DISPLAY_LIMIT: int = get_int("RESULTS_DISPLAY_LIMIT", 5)
+
+
+def get_settings() -> Settings:
+    """Get cached settings instance."""
+    return Settings()
+
+
+# Convenience exports
+settings = Settings()

@@ -16,6 +16,7 @@ dependencies = [
     "pydantic>=2.0.0",
     "yt-dlp>=2024.0.0",
     "huggingface-hub>=0.36.0",
+    "python-dotenv>=1.2.1",
 ]
 
 [project.optional-dependencies]
