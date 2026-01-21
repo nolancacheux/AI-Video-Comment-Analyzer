@@ -14,11 +14,12 @@ interface SentimentPieProps {
   sentiment: SentimentSummary;
 }
 
+// Editorial color palette - warm and sophisticated
 const COLORS = {
-  positive: "#10B981", // Emerald
-  negative: "#F43F5E", // Rose
-  suggestion: "#3B82F6", // Blue
-  neutral: "#64748B", // Slate
+  positive: "#059669", // emerald-600 (love)
+  negative: "#DC2626", // red-600 (dislike)
+  suggestion: "#2563EB", // blue-600
+  neutral: "#78716C", // stone-500
 };
 
 const LABELS = {
@@ -69,14 +70,14 @@ export function SentimentPie({ sentiment }: SentimentPieProps) {
       const item = payload[0];
       const percentage = ((item.value / total) * 100).toFixed(1);
       return (
-        <div className="rounded-lg border bg-white px-3 py-2 shadow-lg">
-          <p className="text-xs font-medium" style={{ color: item.payload.color }}>
+        <div className="rounded-xl border border-stone-200 bg-white px-3 py-2 shadow-[0_4px_6px_rgba(28,25,23,0.07)]">
+          <p className="text-xs font-semibold font-body" style={{ color: item.payload.color }}>
             {item.name}
           </p>
-          <p className="text-sm font-bold tabular-nums">
+          <p className="text-sm font-bold font-display tabular-nums text-stone-800">
             {item.value.toLocaleString()}
           </p>
-          <p className="text-[10px] text-muted-foreground">{percentage}%</p>
+          <p className="text-[10px] text-stone-500 font-body">{percentage}%</p>
         </div>
       );
     }
@@ -114,10 +115,10 @@ export function SentimentPie({ sentiment }: SentimentPieProps) {
                 className="h-2 w-2 rounded-full"
                 style={{ backgroundColor: entry.color }}
               />
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-[10px] text-stone-600 font-body">
                 {entry.name}
               </span>
-              <span className="text-[10px] font-semibold tabular-nums">
+              <span className="text-[10px] font-semibold tabular-nums text-stone-700">
                 {percentage}%
               </span>
             </div>

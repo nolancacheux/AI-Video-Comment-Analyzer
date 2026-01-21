@@ -17,11 +17,12 @@ interface TopicBubbleProps {
   topics: Topic[];
 }
 
+// Editorial color palette - warm and sophisticated
 const COLORS = {
-  positive: "#10B981", // Emerald
-  negative: "#F43F5E", // Rose
-  suggestion: "#3B82F6", // Blue
-  neutral: "#64748B", // Slate
+  positive: "#059669", // emerald-600 (love)
+  negative: "#DC2626", // red-600 (dislike)
+  suggestion: "#2563EB", // blue-600
+  neutral: "#78716C", // stone-500
 };
 
 export function TopicBubble({ topics }: TopicBubbleProps) {
@@ -66,24 +67,24 @@ export function TopicBubble({ topics }: TopicBubbleProps) {
       const item = payload[0].payload;
       const color = COLORS[item.sentiment as keyof typeof COLORS] || COLORS.neutral;
       return (
-        <div className="rounded-lg border bg-white px-3 py-2 shadow-lg max-w-[200px]">
-          <p className="text-xs font-semibold truncate" style={{ color }}>
+        <div className="rounded-xl border border-stone-200 bg-white px-3 py-2 shadow-[0_4px_6px_rgba(28,25,23,0.07)] max-w-[200px]">
+          <p className="text-xs font-semibold font-body truncate" style={{ color }}>
             {item.name}
           </p>
           <div className="mt-1.5 space-y-1">
             <div className="flex justify-between text-[10px]">
-              <span className="text-muted-foreground">Mentions</span>
-              <span className="font-medium tabular-nums">{item.z}</span>
+              <span className="text-stone-500 font-body">Mentions</span>
+              <span className="font-medium tabular-nums text-stone-700">{item.z}</span>
             </div>
             <div className="flex justify-between text-[10px]">
-              <span className="text-muted-foreground">Engagement</span>
-              <span className="font-medium tabular-nums">
+              <span className="text-stone-500 font-body">Engagement</span>
+              <span className="font-medium tabular-nums text-stone-700">
                 {item.x.toLocaleString()}
               </span>
             </div>
             <div className="flex justify-between text-[10px]">
-              <span className="text-muted-foreground">Priority</span>
-              <span className="font-medium tabular-nums">
+              <span className="text-stone-500 font-body">Priority</span>
+              <span className="font-medium tabular-nums text-stone-700">
                 {(item.y * 100).toFixed(0)}%
               </span>
             </div>
@@ -93,7 +94,7 @@ export function TopicBubble({ topics }: TopicBubbleProps) {
               {item.keywords.map((kw, i) => (
                 <span
                   key={i}
-                  className="px-1.5 py-0.5 text-[9px] rounded bg-slate-100 text-slate-600"
+                  className="px-1.5 py-0.5 text-[9px] rounded bg-stone-100 text-stone-600"
                 >
                   {kw}
                 </span>
@@ -108,9 +109,9 @@ export function TopicBubble({ topics }: TopicBubbleProps) {
 
   if (data.length === 0) {
     return (
-      <div className="h-full w-full flex flex-col items-center justify-center text-sm text-muted-foreground">
+      <div className="h-full w-full flex flex-col items-center justify-center text-sm text-stone-500 font-body">
         <span>No topics detected</span>
-        <span className="text-xs mt-1">Need 2+ comments per category</span>
+        <span className="text-xs mt-1 text-stone-400">Need 2+ comments per category</span>
       </div>
     );
   }
@@ -125,14 +126,14 @@ export function TopicBubble({ topics }: TopicBubbleProps) {
             name="Engagement"
             domain={[0, maxEngagement * 1.1]}
             tickFormatter={formatEngagement}
-            tick={{ fontSize: 9, fill: "#64748B" }}
-            axisLine={{ stroke: "#E2E8F0" }}
+            tick={{ fontSize: 9, fill: "#78716C" }}
+            axisLine={{ stroke: "#E7E5E4" }}
             tickLine={false}
             label={{
               value: "Engagement",
               position: "bottom",
               offset: 0,
-              style: { fontSize: 9, fill: "#94A3B8" },
+              style: { fontSize: 9, fill: "#A8A29E" },
             }}
           />
           <YAxis
@@ -140,8 +141,8 @@ export function TopicBubble({ topics }: TopicBubbleProps) {
             dataKey="y"
             name="Priority"
             domain={[0, 1]}
-            tick={{ fontSize: 9, fill: "#64748B" }}
-            axisLine={{ stroke: "#E2E8F0" }}
+            tick={{ fontSize: 9, fill: "#78716C" }}
+            axisLine={{ stroke: "#E7E5E4" }}
             tickLine={false}
             tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
             label={{
@@ -149,7 +150,7 @@ export function TopicBubble({ topics }: TopicBubbleProps) {
               angle: -90,
               position: "insideLeft",
               offset: 10,
-              style: { fontSize: 9, fill: "#94A3B8" },
+              style: { fontSize: 9, fill: "#A8A29E" },
             }}
           />
           <ZAxis
@@ -179,7 +180,7 @@ export function TopicBubble({ topics }: TopicBubbleProps) {
               className="h-2 w-2 rounded-full"
               style={{ backgroundColor: color }}
             />
-            <span className="text-[9px] text-muted-foreground capitalize">
+            <span className="text-[9px] text-stone-600 font-body capitalize">
               {key === "positive" ? "Love" : key === "negative" ? "Dislike" : key === "suggestion" ? "Suggestions" : "Neutral"}
             </span>
           </div>

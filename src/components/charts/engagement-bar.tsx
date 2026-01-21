@@ -17,10 +17,11 @@ interface EngagementBarProps {
   sentiment: SentimentSummary;
 }
 
+// Editorial color palette - warm and sophisticated
 const COLORS = {
-  Love: "#10B981", // Emerald
-  Dislike: "#F43F5E", // Rose
-  Suggestions: "#3B82F6", // Blue
+  Love: "#059669", // emerald-600
+  Dislike: "#DC2626", // red-600
+  Suggestions: "#2563EB", // blue-600
 };
 
 export function EngagementBar({ sentiment }: EngagementBarProps) {
@@ -62,14 +63,14 @@ export function EngagementBar({ sentiment }: EngagementBarProps) {
     if (active && payload && payload.length) {
       const item = payload[0];
       return (
-        <div className="rounded-lg border bg-white px-3 py-2 shadow-lg">
+        <div className="rounded-xl border border-stone-200 bg-white px-3 py-2 shadow-[0_4px_6px_rgba(28,25,23,0.07)]">
           <p
-            className="text-xs font-medium"
+            className="text-xs font-semibold font-body"
             style={{ color: item.payload.fill }}
           >
             {item.payload.name}
           </p>
-          <p className="text-sm font-bold tabular-nums">
+          <p className="text-sm font-bold font-display tabular-nums text-stone-800">
             {item.value.toLocaleString()} likes
           </p>
         </div>
@@ -91,24 +92,24 @@ export function EngagementBar({ sentiment }: EngagementBarProps) {
             strokeDasharray="3 3"
             horizontal={true}
             vertical={false}
-            stroke="#E2E8F0"
+            stroke="#E7E5E4"
           />
           <XAxis
             type="number"
             tickFormatter={formatEngagement}
-            tick={{ fontSize: 10, fill: "#64748B" }}
-            axisLine={{ stroke: "#E2E8F0" }}
+            tick={{ fontSize: 10, fill: "#78716C" }}
+            axisLine={{ stroke: "#E7E5E4" }}
             tickLine={false}
           />
           <YAxis
             type="category"
             dataKey="name"
-            tick={{ fontSize: 10, fill: "#64748B" }}
+            tick={{ fontSize: 10, fill: "#57534E" }}
             axisLine={false}
             tickLine={false}
             width={70}
           />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: "#F8FAFC" }} />
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: "#F5F5F4" }} />
           <Bar dataKey="engagement" radius={[0, 4, 4, 0]}>
             {data.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={entry.fill} />

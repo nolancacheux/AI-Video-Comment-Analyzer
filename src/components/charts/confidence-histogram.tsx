@@ -30,11 +30,12 @@ export function ConfidenceHistogram({
     midpoint: index * 10 + 5,
   }));
 
+  // Editorial color palette for confidence levels
   const getBarColor = (midpoint: number) => {
-    if (midpoint >= 80) return "#10B981"; // High confidence - emerald
-    if (midpoint >= 60) return "#3B82F6"; // Medium confidence - blue
-    if (midpoint >= 40) return "#F59E0B"; // Low-medium - amber
-    return "#F43F5E"; // Low confidence - rose
+    if (midpoint >= 80) return "#059669"; // High confidence - emerald-600
+    if (midpoint >= 60) return "#2563EB"; // Medium confidence - blue-600
+    if (midpoint >= 40) return "#D97706"; // Low-medium - amber-600
+    return "#DC2626"; // Low confidence - red-600
   };
 
   const CustomTooltip = ({
@@ -49,11 +50,11 @@ export function ConfidenceHistogram({
     if (active && payload && payload.length) {
       const item = payload[0].payload;
       return (
-        <div className="rounded-lg border bg-white px-3 py-2 shadow-lg">
-          <p className="text-xs font-medium text-slate-700">
+        <div className="rounded-xl border border-stone-200 bg-white px-3 py-2 shadow-[0_4px_6px_rgba(28,25,23,0.07)]">
+          <p className="text-xs font-semibold font-body text-stone-700">
             Confidence: {item.range}
           </p>
-          <p className="text-sm font-bold tabular-nums">
+          <p className="text-sm font-bold font-display tabular-nums text-stone-800">
             {item.count.toLocaleString()} comments
           </p>
         </div>
@@ -72,17 +73,17 @@ export function ConfidenceHistogram({
         >
           <XAxis
             dataKey="range"
-            tick={{ fontSize: 8, fill: "#64748B" }}
-            axisLine={{ stroke: "#E2E8F0" }}
+            tick={{ fontSize: 8, fill: "#78716C" }}
+            axisLine={{ stroke: "#E7E5E4" }}
             tickLine={false}
             interval={1}
           />
           <YAxis
-            tick={{ fontSize: 9, fill: "#64748B" }}
+            tick={{ fontSize: 9, fill: "#78716C" }}
             axisLine={false}
             tickLine={false}
           />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: "#F8FAFC" }} />
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: "#F5F5F4" }} />
           <Bar dataKey="count" radius={[4, 4, 0, 0]}>
             {data.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={getBarColor(entry.midpoint)} />
@@ -92,8 +93,8 @@ export function ConfidenceHistogram({
       </ResponsiveContainer>
       {/* Average indicator */}
       <div className="flex items-center justify-center gap-2 mt-1">
-        <span className="text-[10px] text-muted-foreground">Avg Confidence:</span>
-        <span className="text-xs font-bold text-indigo-600 tabular-nums">
+        <span className="text-[10px] text-stone-500 font-body">Avg Confidence:</span>
+        <span className="text-xs font-bold text-[#E07A5F] font-display tabular-nums">
           {(avgConfidence * 100).toFixed(1)}%
         </span>
       </div>
