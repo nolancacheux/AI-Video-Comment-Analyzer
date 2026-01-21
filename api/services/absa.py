@@ -53,7 +53,8 @@ ASPECT_HYPOTHESES = {
 }
 
 # Confidence threshold for aspect detection
-ASPECT_THRESHOLD = 0.25
+# Lowered from 0.25 to ensure aspects are detected even with keyword fallback
+ASPECT_THRESHOLD = 0.2
 
 
 @dataclass
@@ -95,16 +96,20 @@ class ABSAAnalyzer:
 
     Uses facebook/bart-large-mnli for aspect detection and
     nlptown/bert-base-multilingual-uncased-sentiment for sentiment.
+
+    By default, uses fast keyword-based detection. Set use_ml=True for
+    ML-based analysis (much slower on CPU).
     """
 
     ZERO_SHOT_MODEL = "facebook/bart-large-mnli"
     SENTIMENT_MODEL = "nlptown/bert-base-multilingual-uncased-sentiment"
 
-    def __init__(self):
+    def __init__(self, use_ml: bool = False):
         self._zero_shot = None
         self._sentiment = None
         self._device = None
-        self._ml_available = ML_AVAILABLE
+        self._ml_available = ML_AVAILABLE and use_ml
+        self._use_ml = use_ml
 
     @property
     def device(self) -> int:
@@ -281,7 +286,9 @@ class ABSAAnalyzer:
         scores = {}
         for aspect, keywords in aspect_keywords.items():
             count = sum(1 for kw in keywords if kw in text_lower)
-            scores[aspect] = min(count * 0.2, 0.8) if count > 0 else 0.1
+            # Base score of 0.3 ensures aspects are always "mentioned" at minimum
+            # This allows recommendation generation based on overall sentiment
+            scores[aspect] = min(0.3 + count * 0.15, 0.9) if count > 0 else 0.3
 
         return scores
 
@@ -369,6 +376,7 @@ class ABSAAnalyzer:
 
         Note: Batch size is smaller than sentiment-only analysis because
         zero-shot classification is more computationally expensive.
+        Yields progress only at batch boundaries to reduce overhead.
         """
         import time
 
@@ -378,20 +386,25 @@ class ABSAAnalyzer:
         for batch_idx, i in enumerate(range(0, len(texts), batch_size)):
             batch_start = time.perf_counter()
             batch_texts = texts[i : i + batch_size]
+            batch_results = []
 
+            # Process entire batch first
             for text in batch_texts:
                 processed += 1
                 result = self.analyze_single(text, max_length)
+                batch_results.append(result)
 
-                batch_time_ms = (time.perf_counter() - batch_start) * 1000
-                progress = ABSABatchProgress(
-                    batch_num=batch_idx + 1,
-                    total_batches=total_batches,
-                    processed=processed,
-                    total=len(texts),
-                    batch_time_ms=batch_time_ms,
-                )
+            batch_time_ms = (time.perf_counter() - batch_start) * 1000
+            progress = ABSABatchProgress(
+                batch_num=batch_idx + 1,
+                total_batches=total_batches,
+                processed=processed,
+                total=len(texts),
+                batch_time_ms=batch_time_ms,
+            )
 
+            # Yield all results from batch with final progress
+            for result in batch_results:
                 yield result, progress
 
 
@@ -521,6 +534,10 @@ def aggregate_absa_results(
 
 
 @lru_cache(maxsize=1)
-def get_absa_analyzer() -> ABSAAnalyzer:
-    """Get singleton ABSA analyzer instance."""
-    return ABSAAnalyzer()
+def get_absa_analyzer(use_ml: bool = False) -> ABSAAnalyzer:
+    """Get singleton ABSA analyzer instance.
+
+    Args:
+        use_ml: If True, use ML models (slow on CPU). Default False uses fast keywords.
+    """
+    return ABSAAnalyzer(use_ml=use_ml)
