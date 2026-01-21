@@ -31,7 +31,7 @@ export function SearchResults({
     return (
       <div
         className={cn(
-          "absolute z-50 w-full mt-1 bg-background border rounded-lg shadow-lg overflow-hidden",
+          "absolute z-50 w-full mt-1 bg-background border rounded-lg shadow-lg",
           className
         )}
       >
@@ -69,7 +69,7 @@ export function SearchResults({
   return (
     <div
       className={cn(
-        "absolute z-50 w-full mt-1 bg-background border rounded-lg shadow-lg overflow-hidden",
+        "absolute z-50 w-full mt-1 bg-background border rounded-lg shadow-lg max-h-80 overflow-y-auto",
         className
       )}
     >
