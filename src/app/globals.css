@@ -1,6 +1,10 @@
 @import "tailwindcss";
 
+/* Editorial Design System for AI Video Comment Analyzer
+   Light theme with warm sophistication - Monocle Magazine meets Bloomberg Terminal */
+
 @theme inline {
+  /* Color palette */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -20,65 +24,326 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  /* Border radius */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+
+  /* Typography - Editorial fonts */
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
+  --font-sans: var(--font-body);
+
+  /* Shadows - warm tones */
+  --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.05);
+  --shadow-md: 0 4px 6px rgba(28, 25, 23, 0.07), 0 2px 4px rgba(28, 25, 23, 0.05);
+  --shadow-lg: 0 10px 15px rgba(28, 25, 23, 0.1), 0 4px 6px rgba(28, 25, 23, 0.05);
+  --shadow-xl: 0 20px 25px rgba(28, 25, 23, 0.15), 0 8px 10px rgba(28, 25, 23, 0.1);
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --radius: 0.625rem;
+  /* Warm light theme - stone palette */
+  --background: #FAFAF9;           /* stone-50 - warm white */
+  --foreground: #1C1917;           /* stone-900 - warm charcoal */
+
+  --card: #FFFFFF;
+  --card-foreground: #1C1917;
+
+  --popover: #FFFFFF;
+  --popover-foreground: #1C1917;
+
+  --primary: #E07A5F;              /* Sophisticated coral accent */
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #F5F5F4;            /* stone-100 */
+  --secondary-foreground: #44403C; /* stone-700 */
+
+  --muted: #E7E5E4;                /* stone-200 */
+  --muted-foreground: #78716C;     /* stone-500 */
+
+  --accent: #E07A5F;               /* Coral accent */
+  --accent-foreground: #FFFFFF;
+
+  --destructive: #DC2626;          /* red-600 */
+  --destructive-foreground: #FFFFFF;
+
+  --border: #E7E5E4;               /* stone-200 */
+  --input: #E7E5E4;
+  --ring: #E07A5F;                 /* Coral for focus */
+
+  /* Sentiment colors - refined, not garish */
+  --color-love: #059669;           /* emerald-600 */
+  --color-love-bg: rgba(16, 185, 129, 0.1);
+  --color-love-text: #047857;      /* emerald-700 */
+
+  --color-dislike: #DC2626;        /* red-600 */
+  --color-dislike-bg: rgba(252, 165, 165, 0.2);
+  --color-dislike-text: #B91C1C;   /* red-700 */
+
+  --color-suggestion: #2563EB;     /* blue-600 */
+  --color-suggestion-bg: rgba(147, 197, 253, 0.2);
+  --color-suggestion-text: #1D4ED8; /* blue-700 */
+
+  --color-neutral: #64748B;        /* slate-500 */
+  --color-neutral-bg: rgba(148, 163, 184, 0.1);
+  --color-neutral-text: #475569;   /* slate-600 */
+
+  /* High engagement colors */
+  --color-high-likes: #D97706;     /* amber-600 */
+  --color-medium-likes: #78716C;   /* stone-500 */
+
+  --radius: 0.75rem;
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
-}
-
+/* Base styles */
 @layer base {
   * {
     border-color: var(--border);
   }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   body {
     background-color: var(--background);
     color: var(--foreground);
+    font-family: var(--font-body), system-ui, sans-serif;
+    font-weight: 400;
+    line-height: 1.6;
+  }
+
+  /* Selection styling */
+  ::selection {
+    background-color: rgba(224, 122, 95, 0.2);
+    color: inherit;
+  }
+
+  /* Focus ring styling */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* Typography hierarchy */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display), Georgia, serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  /* Monospace for data */
+  .font-mono, code, kbd, pre {
+    font-family: var(--font-mono), 'Courier New', monospace;
+    font-feature-settings: "liga" 1;
+  }
+}
+
+/* Custom scrollbar */
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #A8A29E #F5F5F4;
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: #F5F5F4;
+    border-radius: 4px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: #A8A29E;
+    border-radius: 4px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: #78716C;
+  }
+}
+
+/* Utility classes */
+@layer utilities {
+  /* Display font for headlines and big numbers */
+  .font-display {
+    font-family: var(--font-display), Georgia, serif;
+  }
+
+  /* Body font for text */
+  .font-body {
+    font-family: var(--font-body), system-ui, sans-serif;
+  }
+
+  /* Editorial small caps */
+  .small-caps {
+    font-variant: small-caps;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+  }
+
+  /* Card hover effect */
+  .card-hover {
+    transition: transform 150ms ease-out, box-shadow 150ms ease-out;
+  }
+
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* Sentiment background colors */
+  .bg-love {
+    background-color: var(--color-love-bg);
+  }
+
+  .bg-dislike {
+    background-color: var(--color-dislike-bg);
+  }
+
+  .bg-suggestion {
+    background-color: var(--color-suggestion-bg);
+  }
+
+  .bg-neutral-sentiment {
+    background-color: var(--color-neutral-bg);
+  }
+
+  /* Sentiment text colors */
+  .text-love {
+    color: var(--color-love);
+  }
+
+  .text-dislike {
+    color: var(--color-dislike);
+  }
+
+  .text-suggestion {
+    color: var(--color-suggestion);
+  }
+
+  .text-neutral-sentiment {
+    color: var(--color-neutral);
+  }
+
+  /* High engagement styling */
+  .likes-high {
+    color: var(--color-high-likes);
+    font-weight: 600;
+  }
+
+  .likes-medium {
+    color: var(--color-medium-likes);
+  }
+
+  /* Subtle gradient for headers */
+  .gradient-header {
+    background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 1) 0%,
+      rgba(250, 250, 249, 1) 100%
+    );
+  }
+
+  /* Loading skeleton shimmer */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      #E7E5E4 0%,
+      #F5F5F4 50%,
+      #E7E5E4 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  /* Pulse animation for active steps */
+  .pulse-soft {
+    animation: pulse-soft 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-soft {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+  }
+
+  /* Stagger animation for page load */
+  .stagger-1 { animation-delay: 0ms; }
+  .stagger-2 { animation-delay: 50ms; }
+  .stagger-3 { animation-delay: 100ms; }
+  .stagger-4 { animation-delay: 150ms; }
+  .stagger-5 { animation-delay: 200ms; }
+
+  /* Fade up animation */
+  .fade-up {
+    animation: fade-up 300ms ease-out forwards;
+    opacity: 0;
+  }
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Word highlighting for sentiment */
+  .highlight-positive {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: #047857;
+    padding: 0 2px;
+    border-radius: 2px;
+  }
+
+  .highlight-negative {
+    background-color: rgba(220, 38, 38, 0.1);
+    color: #B91C1C;
+    padding: 0 2px;
+    border-radius: 2px;
+  }
+
+  .highlight-suggestion {
+    background-color: rgba(37, 99, 235, 0.1);
+    color: #1D4ED8;
+    padding: 0 2px;
+    border-radius: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
