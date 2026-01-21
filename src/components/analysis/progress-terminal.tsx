@@ -10,9 +10,12 @@ import {
   Sparkles,
   CheckCircle2,
   Loader2,
+  XCircle,
+  Layers,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import type { AnalysisStage } from "@/types";
 
 interface ProgressTerminalProps {
@@ -22,6 +25,7 @@ interface ProgressTerminalProps {
   videoTitle?: string;
   commentsFound?: number;
   commentsAnalyzed?: number;
+  onCancel?: () => void;
 }
 
 const STAGES: { id: AnalysisStage; label: string; description: string; icon: React.ReactNode }[] = [
@@ -40,14 +44,20 @@ const STAGES: { id: AnalysisStage; label: string; description: string; icon: Rea
   {
     id: "extracting_comments",
     label: "Extracting Comments",
-    description: "Downloading all comments",
+    description: "Downloading top 100 comments",
     icon: <MessageSquare className="h-4 w-4" />
   },
   {
     id: "analyzing_sentiment",
     label: "Sentiment Analysis",
-    description: "AI classifies each comment",
+    description: "BERT classifies each comment",
     icon: <Brain className="h-4 w-4" />
+  },
+  {
+    id: "analyzing_aspects",
+    label: "Aspect Analysis",
+    description: "ABSA across content, audio, production, pacing, presenter",
+    icon: <Layers className="h-4 w-4" />
   },
   {
     id: "detecting_topics",
@@ -69,6 +79,7 @@ export function ProgressTerminal({
   videoTitle,
   commentsFound,
   commentsAnalyzed,
+  onCancel,
 }: ProgressTerminalProps) {
   const getStageStatus = (stageId: AnalysisStage) => {
     const stageIndex = STAGES.findIndex((s) => s.id === stageId);
@@ -199,14 +210,27 @@ export function ProgressTerminal({
         </div>
       </div>
 
-      {/* Current Stage Highlight */}
+      {/* Current Stage Highlight + Cancel Button */}
       {currentStageInfo && currentStage !== "complete" && currentStage !== "error" && (
         <div className="px-5 py-3 border-t bg-indigo-50">
-          <div className="flex items-center gap-2">
-            <Loader2 className="h-4 w-4 text-indigo-600 animate-spin" />
-            <span className="text-sm text-indigo-700 font-medium">
-              {currentStageInfo.label}...
-            </span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 text-indigo-600 animate-spin" />
+              <span className="text-sm text-indigo-700 font-medium">
+                {currentStageInfo.label}...
+              </span>
+            </div>
+            {onCancel && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onCancel}
+                className="h-8 px-3 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+              >
+                <XCircle className="h-4 w-4 mr-1.5" />
+                Cancel
+              </Button>
+            )}
           </div>
         </div>
       )}
