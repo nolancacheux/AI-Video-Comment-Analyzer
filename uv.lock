@@ -12,6 +12,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
+    { name = "huggingface-hub" },
     { name = "pydantic" },
     { name = "sqlalchemy" },
     { name = "uvicorn", extra = ["standard"] },
@@ -38,6 +39,7 @@ requires-dist = [
     { name = "bertopic", marker = "extra == 'ml'", specifier = ">=0.16.0" },
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.27.0" },
+    { name = "huggingface-hub", specifier = ">=0.36.0" },
     { name = "pydantic", specifier = ">=2.0.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24.0" },

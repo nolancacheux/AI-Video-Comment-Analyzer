@@ -63,6 +63,20 @@ pnpm dev
 uv run uvicorn api.main:app --reload --port 8000
 ```
 
+### Fast ML Inference (Optional)
+
+For faster ABSA analysis without a local GPU, use Hugging Face Inference API:
+
+1. Create account at https://huggingface.co
+2. Generate token at https://huggingface.co/settings/tokens
+3. Set environment variable:
+   ```bash
+   export HF_TOKEN=hf_your_token_here
+   uv run uvicorn api.main:app --reload --port 8000
+   ```
+
+With `HF_TOKEN` set, ABSA uses HF's GPUs (fast). Without it, falls back to local CPU (slow).
+
 ## Project Structure
 
 ```

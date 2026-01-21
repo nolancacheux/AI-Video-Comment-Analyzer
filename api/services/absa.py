@@ -17,6 +17,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from functools import lru_cache
 
+from api.services.hf_inference import hf_zero_shot_classification, is_hf_available
+
 logger = logging.getLogger(__name__)
 
 try:
@@ -318,23 +320,35 @@ class ABSAAnalyzer:
         else:
             overall_sentiment, overall_score = self._fallback_sentiment(text)
 
-        # Get aspect scores
-        if self._ml_available and self.zero_shot:
-            labels = list(ASPECT_HYPOTHESES.values())
+        # Get aspect scores - try HF API first, then local ML, then fallback
+        aspect_scores = None
+        labels = list(ASPECT_HYPOTHESES.values())
+        label_to_aspect = {v: k for k, v in ASPECT_HYPOTHESES.items()}
+
+        # Try HF Inference API (fast, uses their GPUs)
+        if is_hf_available():
+            hf_result = hf_zero_shot_classification(truncated_text, labels, multi_label=True)
+            if hf_result:
+                aspect_scores = {
+                    label_to_aspect[label]: score
+                    for label, score in hf_result.items()
+                }
+
+        # Fall back to local ML model (slow on CPU)
+        if aspect_scores is None and self._ml_available and self.zero_shot:
             result = self.zero_shot(
                 truncated_text,
                 labels,
                 multi_label=True,
                 hypothesis_template="This comment is about {}.",
             )
-
-            # Map results back to aspects
-            label_to_aspect = {v: k for k, v in ASPECT_HYPOTHESES.items()}
             aspect_scores = {
                 label_to_aspect[label]: score
                 for label, score in zip(result["labels"], result["scores"])
             }
-        else:
+
+        # Fall back to keyword detection (fast, less accurate)
+        if aspect_scores is None:
             aspect_scores = self._fallback_aspects(text)
 
         # Build aspect results
