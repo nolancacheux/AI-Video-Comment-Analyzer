@@ -18,6 +18,14 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import type { AnalysisStage } from "@/types";
 
+interface ABSAProgress {
+  processed: number;
+  total: number;
+  speed: number;
+  batch: number;
+  totalBatches: number;
+}
+
 interface ProgressTerminalProps {
   currentStage: AnalysisStage;
   progress: number;
@@ -25,6 +33,7 @@ interface ProgressTerminalProps {
   videoTitle?: string;
   commentsFound?: number;
   commentsAnalyzed?: number;
+  absaProgress?: ABSAProgress | null;
   onCancel?: () => void;
 }
 
@@ -79,6 +88,7 @@ export function ProgressTerminal({
   videoTitle,
   commentsFound,
   commentsAnalyzed,
+  absaProgress,
   onCancel,
 }: ProgressTerminalProps) {
   const getStageStatus = (stageId: AnalysisStage) => {
@@ -201,6 +211,27 @@ export function ProgressTerminal({
                           style={{ width: `${commentsFound > 0 ? (commentsAnalyzed / commentsFound) * 100 : 0}%` }}
                         />
                       </div>
+                    </div>
+                  )}
+                  {status === "active" && stage.id === "analyzing_aspects" && absaProgress && (
+                    <div className="mt-1.5">
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="text-slate-500">Analyzing aspects</span>
+                        <span className="text-indigo-600 font-medium tabular-nums">
+                          {absaProgress.processed}/{absaProgress.total}
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-indigo-500 rounded-full transition-all duration-300"
+                          style={{ width: `${absaProgress.total > 0 ? (absaProgress.processed / absaProgress.total) * 100 : 0}%` }}
+                        />
+                      </div>
+                      {absaProgress.speed > 0 && (
+                        <p className="text-xs text-slate-400 mt-0.5 tabular-nums">
+                          {absaProgress.speed.toFixed(1)} comments/sec
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>

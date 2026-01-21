@@ -14,6 +14,14 @@ interface MLMetrics {
   processingTimeSeconds: number;
 }
 
+interface ABSAProgress {
+  processed: number;
+  total: number;
+  speed: number;
+  batch: number;
+  totalBatches: number;
+}
+
 interface UseAnalysisState {
   isAnalyzing: boolean;
   progress: number;
@@ -26,6 +34,7 @@ interface UseAnalysisState {
   commentsFound: number;
   commentsAnalyzed: number;
   mlMetrics: MLMetrics;
+  absaProgress: ABSAProgress | null;
   startTime: number | null;
 }
 
@@ -58,6 +67,7 @@ export function useAnalysis(): UseAnalysisReturn {
     commentsFound: 0,
     commentsAnalyzed: 0,
     mlMetrics: initialMLMetrics,
+    absaProgress: null,
     startTime: null,
   });
 
@@ -112,6 +122,7 @@ export function useAnalysis(): UseAnalysisReturn {
       commentsFound: 0,
       commentsAnalyzed: 0,
       mlMetrics: initialMLMetrics,
+      absaProgress: null,
       startTime: null,
     });
   }, []);
@@ -139,6 +150,7 @@ export function useAnalysis(): UseAnalysisReturn {
       commentsFound: 0,
       commentsAnalyzed: 0,
       mlMetrics: initialMLMetrics,
+      absaProgress: null,
       startTime: now,
     });
 
@@ -197,6 +209,20 @@ export function useAnalysis(): UseAnalysisReturn {
           }
         }
 
+        // Handle ABSA progress
+        let absaProgressUpdate: ABSAProgress | null = null;
+        if (event.stage === "analyzing_aspects" && event.data) {
+          if (event.data.absa_processed !== undefined) {
+            absaProgressUpdate = {
+              processed: event.data.absa_processed,
+              total: event.data.absa_total || 0,
+              speed: event.data.absa_speed || 0,
+              batch: event.data.absa_batch || 0,
+              totalBatches: event.data.absa_total_batches || 0,
+            };
+          }
+        }
+
         setState((prev) => ({
           ...prev,
           progress: event.progress,
@@ -210,6 +236,7 @@ export function useAnalysis(): UseAnalysisReturn {
             ...prev.mlMetrics,
             ...mlUpdates,
           },
+          absaProgress: absaProgressUpdate || prev.absaProgress,
         }));
 
         if (event.stage === "error") {

@@ -37,6 +37,7 @@ export default function Home() {
     commentsFound,
     commentsAnalyzed,
     mlMetrics,
+    absaProgress,
     startAnalysis,
     cancelAnalysis,
     reset,
@@ -219,6 +220,7 @@ export default function Home() {
                   videoTitle={videoTitle || undefined}
                   commentsFound={commentsFound || undefined}
                   commentsAnalyzed={commentsAnalyzed || undefined}
+                  absaProgress={absaProgress}
                   onCancel={cancelAnalysis}
                 />
               </div>
