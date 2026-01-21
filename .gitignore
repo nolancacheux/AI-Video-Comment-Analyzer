@@ -55,6 +55,7 @@ coverage/
 .nyc_output/
 .pytest_cache/
 
+.ruff_cache/
 # Database
 *.sqlite
 *.sqlite3
