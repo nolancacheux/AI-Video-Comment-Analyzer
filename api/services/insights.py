@@ -88,8 +88,9 @@ def _generate_aspect_recommendations(
 ) -> Recommendation | None:
     """Generate recommendation for a single aspect based on its stats."""
 
-    # Skip aspects with very few mentions
-    if stats.mention_count < 3:
+    # Skip aspects with no mentions
+    # Lowered from 3 to 1 to ensure recommendations generate for all content types
+    if stats.mention_count < 1:
         return None
 
     sentiment = stats.sentiment_score
