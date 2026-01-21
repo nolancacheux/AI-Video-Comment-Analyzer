@@ -63,16 +63,40 @@ pnpm dev
 uv run uvicorn api.main:app --reload --port 8000
 ```
 
-### Fast ML Inference (Optional)
+## Environment Configuration
+
+All backend settings are configurable via environment variables. Copy `.env.example` to `.env` for local development:
+
+```bash
+cp .env.example .env
+```
+
+### Key Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `HF_TOKEN` | (none) | Hugging Face API token for fast ML inference |
+| `HF_ENABLED` | `true` | Enable/disable HF Inference API |
+| `DATABASE_URL` | `sqlite:///./ai-video-comment-analyzer.db` | Database connection URL |
+| `YOUTUBE_MAX_COMMENTS` | `100` | Max comments to extract per video |
+| `SENTIMENT_MODEL` | `nlptown/bert-base-multilingual-uncased-sentiment` | Sentiment analysis model |
+| `ZERO_SHOT_MODEL` | `facebook/bart-large-mnli` | Zero-shot classification model |
+| `SENTIMENT_BATCH_SIZE` | `32` | Batch size for sentiment analysis |
+| `ABSA_BATCH_SIZE` | `16` | Batch size for ABSA analysis |
+| `ASPECT_DETECTION_THRESHOLD` | `0.2` | Confidence threshold for aspect detection |
+
+See `.env.example` for the complete list of configurable variables.
+
+### Fast ML Inference (Hugging Face)
 
 For faster ABSA analysis without a local GPU, use Hugging Face Inference API:
 
 1. Create account at https://huggingface.co
 2. Generate token at https://huggingface.co/settings/tokens
-3. Set environment variable:
-   ```bash
-   export HF_TOKEN=hf_your_token_here
-   uv run uvicorn api.main:app --reload --port 8000
+3. Add to `.env`:
+   ```
+   HF_TOKEN=hf_your_token_here
+   HF_ENABLED=true
    ```
 
 With `HF_TOKEN` set, ABSA uses HF's GPUs (fast). Without it, falls back to local CPU (slow).
@@ -115,6 +139,7 @@ src/
 
 api/
 ├── main.py                   # FastAPI app with CORS (ports 3000, 3001)
+├── config.py                 # Central configuration (loads from .env)
 ├── models/
 │   ├── schemas.py            # Pydantic models (includes MLMetadata)
 │   └── __init__.py
@@ -125,6 +150,7 @@ api/
 │   ├── sentiment.py          # BERT sentiment with streaming progress
 │   ├── topics.py             # Topic modeling
 │   ├── absa.py               # Aspect-Based Sentiment Analysis (BART zero-shot)
+│   ├── hf_inference.py       # Hugging Face Inference API client
 │   └── insights.py           # Recommendations and health scoring
 └── db/
     ├── models.py             # SQLAlchemy models
@@ -314,6 +340,8 @@ GitHub Actions (`.github/workflows/ci.yml`) runs:
 - [x] Search results dropdown scrollable (max-h-80)
 - [x] Topic display shows helpful message for few comments
 - [x] Backend logging enabled (INFO level)
+- [x] Environment configuration via .env file
+- [x] HF Inference API integration for fast ML
 - [x] 215 unit tests passing
 - [x] 75% code coverage
 
