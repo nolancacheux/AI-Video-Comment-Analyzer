@@ -7,6 +7,7 @@ import {
   Plus,
   X,
   Clock,
+  GripVertical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,10 @@ interface SidebarProps {
   isAnalyzing: boolean;
 }
 
+const MIN_WIDTH = 56;
+const MAX_WIDTH = 400;
+const DEFAULT_WIDTH = 224;
+
 export function Sidebar({
   history,
   isLoadingHistory,
@@ -34,6 +39,45 @@ export function Sidebar({
   isAnalyzing,
 }: SidebarProps) {
   const [collapsed, setCollapsed] = React.useState(false);
+  const [width, setWidth] = React.useState(DEFAULT_WIDTH);
+  const [isResizing, setIsResizing] = React.useState(false);
+  const sidebarRef = React.useRef<HTMLDivElement>(null);
+
+  const handleMouseDown = React.useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  React.useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+      const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, e.clientX));
+      setWidth(newWidth);
+      if (newWidth <= MIN_WIDTH + 20) {
+        setCollapsed(true);
+      } else if (collapsed && newWidth > MIN_WIDTH + 20) {
+        setCollapsed(false);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+    }
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [isResizing, collapsed]);
 
   const formatTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
@@ -59,20 +103,35 @@ export function Sidebar({
 
   return (
     <div
+      ref={sidebarRef}
       className={cn(
-        "flex h-full flex-col border-r bg-white transition-all duration-200",
-        collapsed ? "w-14" : "w-56"
+        "relative flex h-full flex-col border-r bg-white",
+        !isResizing && "transition-all duration-200"
       )}
+      style={{ width: collapsed ? MIN_WIDTH : width }}
     >
+      {/* Resize handle */}
+      <div
+        onMouseDown={handleMouseDown}
+        className={cn(
+          "absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-indigo-400 transition-colors z-10",
+          isResizing && "bg-indigo-500"
+        )}
+      />
       {/* Header with toggle */}
       <div className="flex items-center justify-between p-2 border-b">
         {!collapsed && (
-          <span className="text-sm font-semibold text-slate-700">AI-Video-Comment-Analyzer</span>
+          <span className="text-sm font-semibold text-slate-700 truncate">History</span>
         )}
         <button
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={() => {
+            if (collapsed) {
+              setWidth(DEFAULT_WIDTH);
+            }
+            setCollapsed(!collapsed);
+          }}
           className={cn(
-            "p-1.5 rounded hover:bg-slate-100 transition-colors",
+            "p-1.5 rounded hover:bg-slate-100 transition-colors flex-shrink-0",
             collapsed && "mx-auto"
           )}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
