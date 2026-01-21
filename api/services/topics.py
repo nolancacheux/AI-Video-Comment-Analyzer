@@ -4,6 +4,8 @@ from collections import Counter
 from dataclasses import dataclass, field
 from functools import lru_cache
 
+from api.config import settings
+
 logger = logging.getLogger(__name__)
 
 try:
@@ -201,11 +203,13 @@ def extract_keywords_simple(texts: list[str], top_n: int = 5) -> list[str]:
 def simple_topic_clustering(
     texts: list[str],
     engagement_scores: list[int],
-    max_topics: int = 5,
+    max_topics: int | None = None,
 ) -> list[TopicResult]:
     """Simple topic extraction using keyword clustering."""
+    if max_topics is None:
+        max_topics = settings.MAX_TOPICS
     # Lowered from 3 to 2 to allow smaller topics
-    if len(texts) < 2:
+    if len(texts) < settings.TOPIC_MIN_COMMENTS:
         logger.info(f"[Topics] Not enough texts for topic clustering: {len(texts)} (need 2+)")
         return []
 
@@ -253,8 +257,8 @@ def simple_topic_clustering(
 
 
 class TopicModeler:
-    def __init__(self, embedding_model: str = "all-MiniLM-L6-v2"):
-        self._embedding_model_name = embedding_model
+    def __init__(self, embedding_model: str | None = None):
+        self._embedding_model_name = embedding_model or settings.EMBEDDING_MODEL
         self._embedding_model = None
         self._topic_model = None
         self._ml_available = ML_AVAILABLE
@@ -279,9 +283,13 @@ class TopicModeler:
         self,
         texts: list[str],
         engagement_scores: list[int] | None = None,
-        min_topic_size: int = 3,
-        max_topics: int = 10,
+        min_topic_size: int | None = None,
+        max_topics: int | None = None,
     ) -> list[TopicResult]:
+        if min_topic_size is None:
+            min_topic_size = settings.TOPIC_MIN_COMMENTS
+        if max_topics is None:
+            max_topics = settings.MAX_TOPICS_ML
         if len(texts) < min_topic_size:
             return []
 
