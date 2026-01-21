@@ -356,7 +356,8 @@ async def run_analysis(url: str, db: Session) -> AsyncGenerator[str, None]:
         ("negative", negative_comments, DBSentimentType.NEGATIVE),
         ("suggestion", suggestion_comments, DBSentimentType.SUGGESTION),
     ]:
-        if len(comments_list) >= 3:
+        # Lowered from 3 to 2 to allow topic extraction for smaller categories
+        if len(comments_list) >= 2:
             texts = [cd.text for _, cd in comments_list]
             engagements = [cd.like_count for _, cd in comments_list]
             topics = topic_modeler.extract_topics(texts, engagements, max_topics=5)
