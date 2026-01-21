@@ -284,28 +284,28 @@ export default function Home() {
                   label="Love"
                   value={displayResult.sentiment.positive_count}
                   subValue={`${((displayResult.sentiment.positive_count / displayResult.total_comments) * 100).toFixed(0)}%`}
-                  color="emerald"
+                  color="love"
                   icon={<Heart className="h-5 w-5" />}
                 />
                 <StatCard
                   label="Dislike"
                   value={displayResult.sentiment.negative_count}
                   subValue={`${((displayResult.sentiment.negative_count / displayResult.total_comments) * 100).toFixed(0)}%`}
-                  color="rose"
+                  color="dislike"
                   icon={<AlertTriangle className="h-5 w-5" />}
                 />
                 <StatCard
                   label="Suggestions"
                   value={displayResult.sentiment.suggestion_count}
                   subValue={`${((displayResult.sentiment.suggestion_count / displayResult.total_comments) * 100).toFixed(0)}%`}
-                  color="blue"
+                  color="suggestion"
                   icon={<Lightbulb className="h-5 w-5" />}
                 />
                 <StatCard
                   label="Neutral"
                   value={displayResult.sentiment.neutral_count}
                   subValue={`${((displayResult.sentiment.neutral_count / displayResult.total_comments) * 100).toFixed(0)}%`}
-                  color="slate"
+                  color="neutral"
                   icon={<MessageSquare className="h-5 w-5" />}
                 />
               </StatsGrid>

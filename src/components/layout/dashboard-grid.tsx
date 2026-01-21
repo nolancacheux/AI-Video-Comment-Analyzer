@@ -12,8 +12,7 @@ export function DashboardGrid({ children, className }: DashboardGridProps) {
   return (
     <div
       className={cn(
-        "grid h-full gap-3 p-4",
-        // Main grid layout: 3 columns for charts, then topics row, then comments row
+        "grid h-full gap-4 p-6",
         "grid-rows-[auto_1fr_1fr_1fr]",
         className
       )}
@@ -30,14 +29,7 @@ interface ChartRowProps {
 
 export function ChartRow({ children, className }: ChartRowProps) {
   return (
-    <div
-      className={cn(
-        "grid grid-cols-3 gap-3",
-        className
-      )}
-    >
-      {children}
-    </div>
+    <div className={cn("grid grid-cols-3 gap-4", className)}>{children}</div>
   );
 }
 
@@ -59,20 +51,26 @@ export function ChartCard({
   return (
     <div
       className={cn(
-        "flex flex-col rounded-lg border bg-white overflow-hidden",
+        "flex flex-col rounded-xl bg-white overflow-hidden",
+        "shadow-[0_4px_6px_rgba(28,25,23,0.07),0_2px_4px_rgba(28,25,23,0.05)]",
+        "transition-shadow duration-150 hover:shadow-[0_10px_15px_rgba(28,25,23,0.1),0_4px_6px_rgba(28,25,23,0.05)]",
         className
       )}
     >
-      <div className="flex items-center justify-between px-4 py-2.5 border-b bg-[#FAFAFA]">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-stone-100">
         <div>
-          <h3 className="text-sm font-semibold tracking-tight">{title}</h3>
+          <h3 className="font-display text-sm font-semibold text-stone-800 tracking-tight">
+            {title}
+          </h3>
           {subtitle && (
-            <p className="text-[10px] text-muted-foreground mt-0.5">{subtitle}</p>
+            <p className="text-[11px] text-stone-500 mt-0.5 font-body">
+              {subtitle}
+            </p>
           )}
         </div>
         {action}
       </div>
-      <div className="flex-1 p-3 min-h-0">{children}</div>
+      <div className="flex-1 p-4 min-h-0">{children}</div>
     </div>
   );
 }
@@ -86,7 +84,8 @@ export function TopicsRow({ children, className }: TopicsRowProps) {
   return (
     <div
       className={cn(
-        "flex flex-col rounded-lg border bg-white overflow-hidden",
+        "flex flex-col rounded-xl bg-white overflow-hidden",
+        "shadow-[0_4px_6px_rgba(28,25,23,0.07),0_2px_4px_rgba(28,25,23,0.05)]",
         className
       )}
     >
@@ -104,7 +103,8 @@ export function CommentsRow({ children, className }: CommentsRowProps) {
   return (
     <div
       className={cn(
-        "flex flex-col rounded-lg border bg-white overflow-hidden",
+        "flex flex-col rounded-xl bg-white overflow-hidden",
+        "shadow-[0_4px_6px_rgba(28,25,23,0.07),0_2px_4px_rgba(28,25,23,0.05)]",
         className
       )}
     >
@@ -120,14 +120,7 @@ interface StatsGridProps {
 
 export function StatsGrid({ children, className }: StatsGridProps) {
   return (
-    <div
-      className={cn(
-        "grid grid-cols-4 gap-3",
-        className
-      )}
-    >
-      {children}
-    </div>
+    <div className={cn("grid grid-cols-4 gap-4", className)}>{children}</div>
   );
 }
 
@@ -135,7 +128,7 @@ interface StatCardProps {
   label: string;
   value: string | number;
   subValue?: string;
-  color?: "emerald" | "rose" | "blue" | "slate" | "indigo";
+  color?: "love" | "dislike" | "suggestion" | "neutral";
   icon?: React.ReactNode;
 }
 
@@ -143,51 +136,100 @@ export function StatCard({
   label,
   value,
   subValue,
-  color = "slate",
+  color = "neutral",
   icon,
 }: StatCardProps) {
-  const colorClasses = {
-    emerald: "bg-emerald-50 border-emerald-200 text-emerald-700",
-    rose: "bg-rose-50 border-rose-200 text-rose-700",
-    blue: "bg-blue-50 border-blue-200 text-blue-700",
-    slate: "bg-slate-50 border-slate-200 text-slate-700",
-    indigo: "bg-indigo-50 border-indigo-200 text-indigo-700",
+  // Editorial color scheme with warm, sophisticated tones
+  const colorConfig = {
+    love: {
+      bg: "bg-white",
+      border: "border-l-4 border-l-emerald-500",
+      tint: "bg-emerald-50/50",
+      value: "text-emerald-600",
+      label: "text-emerald-700/80",
+      iconBg: "bg-emerald-100",
+    },
+    dislike: {
+      bg: "bg-white",
+      border: "border-l-4 border-l-rose-500",
+      tint: "bg-rose-50/50",
+      value: "text-rose-600",
+      label: "text-rose-700/80",
+      iconBg: "bg-rose-100",
+    },
+    suggestion: {
+      bg: "bg-white",
+      border: "border-l-4 border-l-blue-500",
+      tint: "bg-blue-50/50",
+      value: "text-blue-600",
+      label: "text-blue-700/80",
+      iconBg: "bg-blue-100",
+    },
+    neutral: {
+      bg: "bg-white",
+      border: "border-l-4 border-l-stone-400",
+      tint: "bg-stone-50/50",
+      value: "text-stone-600",
+      label: "text-stone-700/80",
+      iconBg: "bg-stone-100",
+    },
   };
 
-  const valueColorClasses = {
-    emerald: "text-emerald-600",
-    rose: "text-rose-600",
-    blue: "text-blue-600",
-    slate: "text-slate-600",
-    indigo: "text-indigo-600",
-  };
+  const config = colorConfig[color];
 
   return (
     <div
       className={cn(
-        "rounded-lg border px-3 py-2.5 flex items-center gap-3",
-        colorClasses[color]
+        "relative rounded-xl overflow-hidden",
+        "shadow-[0_4px_6px_rgba(28,25,23,0.07),0_2px_4px_rgba(28,25,23,0.05)]",
+        "transition-all duration-150",
+        "hover:shadow-[0_10px_15px_rgba(28,25,23,0.1),0_4px_6px_rgba(28,25,23,0.05)]",
+        "hover:-translate-y-0.5",
+        config.bg,
+        config.border
       )}
     >
-      {icon && (
-        <div className="flex-shrink-0 opacity-60">
-          {icon}
-        </div>
-      )}
-      <div className="min-w-0">
-        <p className="text-[10px] uppercase tracking-wider font-medium opacity-70">
-          {label}
-        </p>
+      {/* Subtle tint overlay */}
+      <div className={cn("absolute inset-0", config.tint)} />
+
+      <div className="relative px-5 py-4 flex flex-col">
+        {/* Label with small caps */}
         <p
           className={cn(
-            "text-xl font-bold tabular-nums tracking-tight",
-            valueColorClasses[color]
+            "small-caps text-[11px] font-medium tracking-wider mb-1",
+            config.label
           )}
         >
-          {typeof value === "number" ? value.toLocaleString() : value}
+          {label}
         </p>
-        {subValue && (
-          <p className="text-[10px] opacity-60">{subValue}</p>
+
+        {/* Large number in display font */}
+        <div className="flex items-baseline gap-2">
+          <span
+            className={cn(
+              "font-display text-4xl font-bold tabular-nums tracking-tight",
+              config.value
+            )}
+          >
+            {typeof value === "number" ? value.toLocaleString() : value}
+          </span>
+          {subValue && (
+            <span className="text-base font-body text-stone-500">
+              {subValue}
+            </span>
+          )}
+        </div>
+
+        {/* Optional icon in corner */}
+        {icon && (
+          <div
+            className={cn(
+              "absolute top-3 right-3 p-2 rounded-lg opacity-30",
+              config.iconBg
+            )}
+          >
+            {icon}
+          </div>
         )}
       </div>
     </div>
