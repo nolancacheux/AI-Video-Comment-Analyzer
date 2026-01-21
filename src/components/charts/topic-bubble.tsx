@@ -108,8 +108,9 @@ export function TopicBubble({ topics }: TopicBubbleProps) {
 
   if (data.length === 0) {
     return (
-      <div className="h-full w-full flex items-center justify-center text-sm text-muted-foreground">
-        No topics to display
+      <div className="h-full w-full flex flex-col items-center justify-center text-sm text-muted-foreground">
+        <span>No topics detected</span>
+        <span className="text-xs mt-1">Need 2+ comments per category</span>
       </div>
     );
   }
