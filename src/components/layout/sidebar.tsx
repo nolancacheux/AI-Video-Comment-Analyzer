@@ -7,12 +7,22 @@ import {
   Plus,
   X,
   Clock,
-  GripVertical,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { AnalysisHistoryItem } from "@/types";
 
 interface SidebarProps {
@@ -41,6 +51,7 @@ export function Sidebar({
   const [collapsed, setCollapsed] = React.useState(false);
   const [width, setWidth] = React.useState(DEFAULT_WIDTH);
   const [isResizing, setIsResizing] = React.useState(false);
+  const [deleteItem, setDeleteItem] = React.useState<AnalysisHistoryItem | null>(null);
   const sidebarRef = React.useRef<HTMLDivElement>(null);
 
   const handleMouseDown = React.useCallback((e: React.MouseEvent) => {
@@ -94,11 +105,16 @@ export function Sidebar({
     return date.toLocaleDateString();
   };
 
-  const handleDelete = (e: React.MouseEvent, id: number, title: string) => {
+  const handleDeleteClick = (e: React.MouseEvent, item: AnalysisHistoryItem) => {
     e.stopPropagation();
-    if (onDeleteHistory && window.confirm(`Delete "${title}"?`)) {
-      onDeleteHistory(id);
+    setDeleteItem(item);
+  };
+
+  const confirmDelete = () => {
+    if (deleteItem && onDeleteHistory) {
+      onDeleteHistory(deleteItem.id);
     }
+    setDeleteItem(null);
   };
 
   return (
@@ -205,11 +221,11 @@ export function Sidebar({
                   {/* Delete button - left side */}
                   {onDeleteHistory && !collapsed && (
                     <button
-                      onClick={(e) => handleDelete(e, item.id, item.video_title)}
+                      onClick={(e) => handleDeleteClick(e, item)}
                       className="flex-shrink-0 p-1 rounded hover:bg-red-100 transition-colors"
                       title="Delete analysis"
                     >
-                      <X className="h-4 w-4 text-slate-400 hover:text-red-500" />
+                      <Trash2 className="h-3.5 w-3.5 text-slate-400 hover:text-red-500" />
                     </button>
                   )}
 
@@ -252,6 +268,27 @@ export function Sidebar({
           )}
         </div>
       </ScrollArea>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteItem} onOpenChange={() => setDeleteItem(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete analysis?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the analysis for "{deleteItem?.video_title}". This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

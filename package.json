@@ -10,6 +10,7 @@
     "api": "uvicorn api.main:app --reload"
   },
   "dependencies": {
+    "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-progress": "^1.1.8",
     "@radix-ui/react-scroll-area": "^1.2.10",
     "@radix-ui/react-separator": "^1.1.8",
