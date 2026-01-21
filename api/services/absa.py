@@ -18,7 +18,11 @@ from enum import Enum
 from functools import lru_cache
 
 from api.config import settings
-from api.services.hf_inference import hf_zero_shot_classification, is_hf_available
+from api.services.hf_inference import (
+    hf_zero_shot_classification,
+    hf_zero_shot_classification_batch,
+    is_hf_available,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -329,8 +333,7 @@ class ABSAAnalyzer:
             hf_result = hf_zero_shot_classification(truncated_text, labels, multi_label=True)
             if hf_result:
                 aspect_scores = {
-                    label_to_aspect[label]: score
-                    for label, score in hf_result.items()
+                    label_to_aspect[label]: score for label, score in hf_result.items()
                 }
                 aspect_method = "hf_api"
 
@@ -394,6 +397,80 @@ class ABSAAnalyzer:
             results.append(result)
         return results
 
+    def _analyze_batch_hf(
+        self,
+        batch_texts: list[str],
+        max_length: int,
+    ) -> list[ABSAResult]:
+        """
+        Analyze a batch of texts using HF Inference API batch endpoint.
+        Returns list of ABSAResult objects.
+        """
+        labels = list(ASPECT_HYPOTHESES.values())
+        label_to_aspect = {v: k for k, v in ASPECT_HYPOTHESES.items()}
+
+        # Truncate texts
+        truncated_texts = [
+            text[:max_length] if len(text) > max_length else text for text in batch_texts
+        ]
+
+        # Get overall sentiment for each text (still per-text for now)
+        sentiments = []
+        for text in truncated_texts:
+            if self._ml_available and self.sentiment:
+                sent_result = self.sentiment(text)[0]
+                overall_sentiment, overall_score = self._map_star_to_sentiment(sent_result["label"])
+                overall_score = sent_result["score"] * overall_score
+            else:
+                overall_sentiment, overall_score = self._fallback_sentiment(text)
+            sentiments.append((overall_sentiment, overall_score))
+
+        # Batch call for aspect detection
+        batch_aspect_scores = hf_zero_shot_classification_batch(
+            truncated_texts, labels, multi_label=True
+        )
+
+        results = []
+        for idx, text in enumerate(batch_texts):
+            overall_sentiment, overall_score = sentiments[idx]
+
+            # Get aspect scores from batch result or fallback
+            aspect_scores = None
+            if batch_aspect_scores and idx < len(batch_aspect_scores) and batch_aspect_scores[idx]:
+                raw_scores = batch_aspect_scores[idx]
+                aspect_scores = {
+                    label_to_aspect[label]: score for label, score in raw_scores.items()
+                }
+
+            # Fallback if batch result missing
+            if aspect_scores is None:
+                aspect_scores = self._fallback_aspects(text)
+
+            # Build aspect results
+            aspects = {}
+            for aspect in Aspect:
+                score = aspect_scores.get(aspect, 0.0)
+                mentioned = score >= settings.ASPECT_DETECTION_THRESHOLD
+
+                aspects[aspect] = AspectResult(
+                    aspect=aspect,
+                    mentioned=mentioned,
+                    confidence=round(score, 3),
+                    sentiment=overall_sentiment if mentioned else None,
+                    sentiment_score=round(overall_score, 3) if mentioned else None,
+                )
+
+            results.append(
+                ABSAResult(
+                    text=text,
+                    aspects=aspects,
+                    overall_sentiment=overall_sentiment,
+                    overall_score=round(overall_score, 3),
+                )
+            )
+
+        return results
+
     def analyze_batch_with_progress(
         self,
         texts: list[str],
@@ -417,13 +494,16 @@ class ABSAAnalyzer:
         total_batches = (len(texts) + batch_size - 1) // batch_size
 
         # Log which method will be used
-        if is_hf_available():
-            method = "HF Inference API (fast)"
+        use_batch_hf = is_hf_available()
+        if use_batch_hf:
+            method = "HF Inference API Batch (fast)"
         elif self._ml_available:
             method = "Local ML model (slow on CPU)"
         else:
             method = "Keyword fallback (fast, less accurate)"
-        logger.info(f"[ABSA] Starting: {len(texts)} comments, {total_batches} batches, method={method}")
+        logger.info(
+            f"[ABSA] Starting: {len(texts)} comments, {total_batches} batches, method={method}"
+        )
 
         processed = 0
         total_start = time.perf_counter()
@@ -431,14 +511,17 @@ class ABSAAnalyzer:
         for batch_idx, i in enumerate(range(0, len(texts), batch_size)):
             batch_start = time.perf_counter()
             batch_texts = texts[i : i + batch_size]
-            batch_results = []
 
-            # Process entire batch first
-            for text in batch_texts:
-                processed += 1
-                result = self.analyze_single(text, max_length)
-                batch_results.append(result)
+            # Use batch HF API if available, otherwise fall back to single processing
+            if use_batch_hf:
+                batch_results = self._analyze_batch_hf(batch_texts, max_length)
+            else:
+                batch_results = []
+                for text in batch_texts:
+                    result = self.analyze_single(text, max_length)
+                    batch_results.append(result)
 
+            processed += len(batch_texts)
             batch_time_ms = (time.perf_counter() - batch_start) * 1000
             logger.info(
                 f"[ABSA] Batch {batch_idx + 1}/{total_batches}: "

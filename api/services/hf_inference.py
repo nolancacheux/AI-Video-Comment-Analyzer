@@ -5,7 +5,6 @@ Uses HF's free inference API to run models on their GPUs instead of local CPU.
 Configure via HF_TOKEN and HF_ENABLED in .env file.
 """
 
-import json
 import logging
 from functools import lru_cache
 
@@ -66,8 +65,7 @@ def hf_zero_shot_classification(
 
         # Parse response - new router format: [{"label": "...", "score": ...}, ...]
         if isinstance(result, list) and all(
-            isinstance(item, dict) and "label" in item and "score" in item
-            for item in result
+            isinstance(item, dict) and "label" in item and "score" in item for item in result
         ):
             scores = {item["label"]: item["score"] for item in result}
             logger.info(f"[HF] Zero-shot success: {len(scores)} labels")
@@ -89,6 +87,75 @@ def hf_zero_shot_classification(
         return None
     except Exception as e:
         logger.warning(f"[HF] Zero-shot API error: {e}")
+        return None
+
+
+def hf_zero_shot_classification_batch(
+    texts: list[str],
+    labels: list[str],
+    multi_label: bool = True,
+) -> list[dict[str, float] | None] | None:
+    """
+    Run zero-shot classification via HF Inference API for multiple texts in a batch.
+
+    Returns list of {label: score} dicts or None if HF not available.
+    This is ~10x faster than calling hf_zero_shot_classification for each text.
+    """
+    headers = _get_hf_headers()
+    if not headers:
+        return None
+
+    if not texts:
+        return []
+
+    try:
+        url = f"{HF_API_URL}/{settings.ZERO_SHOT_MODEL}"
+        payload = {
+            "inputs": texts,
+            "parameters": {
+                "candidate_labels": labels,
+                "multi_label": multi_label,
+            },
+        }
+
+        response = requests.post(url, headers=headers, json=payload, timeout=120)
+        response.raise_for_status()
+
+        results = response.json()
+        logger.debug(f"[HF] Batch zero-shot API response type: {type(results)}")
+
+        # Parse response - should be a list of results, one per input text
+        parsed_results = []
+
+        # Handle batch response format
+        if isinstance(results, list):
+            for result in results:
+                if isinstance(result, list) and all(
+                    isinstance(item, dict) and "label" in item and "score" in item
+                    for item in result
+                ):
+                    # New router format: [{"label": "...", "score": ...}, ...]
+                    scores = {item["label"]: item["score"] for item in result}
+                    parsed_results.append(scores)
+                elif isinstance(result, dict) and "labels" in result and "scores" in result:
+                    # Legacy format: {"sequence": "...", "labels": [...], "scores": [...]}
+                    scores = dict(zip(result["labels"], result["scores"]))
+                    parsed_results.append(scores)
+                else:
+                    logger.warning(f"[HF] Unexpected result format in batch: {result}")
+                    parsed_results.append(None)
+
+        logger.info(f"[HF] Batch zero-shot success: {len(parsed_results)} results")
+        return parsed_results
+
+    except requests.exceptions.Timeout:
+        logger.warning("[HF] Batch zero-shot API timeout")
+        return None
+    except requests.exceptions.HTTPError as e:
+        logger.warning(f"[HF] Batch zero-shot API HTTP error: {e}")
+        return None
+    except Exception as e:
+        logger.warning(f"[HF] Batch zero-shot API error: {e}")
         return None
 
 
