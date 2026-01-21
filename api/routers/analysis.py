@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
+from api.config import settings
 from api.db import Analysis, Comment, Topic, TopicComment, Video, get_db
 from api.db.models import PriorityLevel as DBPriorityLevel
 from api.db.models import SentimentType as DBSentimentType
@@ -693,7 +694,9 @@ async def get_analysis_result(analysis_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/history", response_model=list[AnalysisHistoryItem])
-async def get_analysis_history(limit: int = 10, db: Session = Depends(get_db)):
+async def get_analysis_history(limit: int | None = None, db: Session = Depends(get_db)):
+    if limit is None:
+        limit = settings.HISTORY_LIMIT
     analyses = db.query(Analysis).order_by(Analysis.analyzed_at.desc()).limit(limit).all()
 
     return [
@@ -744,13 +747,13 @@ async def delete_analysis(analysis_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/search", response_model=list[SearchResult])
-async def search_videos(q: str, limit: int = 5):
+async def search_videos(q: str, limit: int | None = None):
     """Search YouTube videos by query."""
     if not q or len(q.strip()) < 2:
         raise HTTPException(status_code=400, detail="Query must be at least 2 characters")
 
-    if limit < 1 or limit > 10:
-        limit = 5
+    if limit is None or limit < 1 or limit > settings.HISTORY_LIMIT:
+        limit = settings.SEARCH_RESULTS_LIMIT
 
     extractor = YouTubeExtractor()
     try:
