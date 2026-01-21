@@ -187,7 +187,8 @@ def extract_keywords_simple(texts: list[str], top_n: int = 5) -> list[str]:
 
     words = []
     for text in texts:
-        text_words = re.findall(r"\b[a-zA-Z]{3,}\b", text.lower())
+        # Match words with accented characters (French, Spanish, etc.)
+        text_words = re.findall(r"\b[a-zA-ZÀ-ÿ]{3,}\b", text.lower())
         words.extend([w for w in text_words if w not in stopwords])
 
     word_counts = Counter(words)
@@ -200,7 +201,8 @@ def simple_topic_clustering(
     max_topics: int = 5,
 ) -> list[TopicResult]:
     """Simple topic extraction using keyword clustering."""
-    if len(texts) < 3:
+    # Lowered from 3 to 2 to allow smaller topics
+    if len(texts) < 2:
         return []
 
     keywords = extract_keywords_simple(texts, top_n=20)
