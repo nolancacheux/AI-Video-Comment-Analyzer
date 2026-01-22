@@ -1,31 +1,20 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
-import { Heart, AlertTriangle, Lightbulb, MessageSquare } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Heart, Lightbulb, MessageSquare } from "lucide-react";
 import { Sidebar } from "@/components/layout/sidebar";
-import { VideoHeader } from "@/components/layout/video-header";
-import {
-  StatsGrid,
-  StatCard,
-} from "@/components/layout/dashboard-grid";
-import { SentimentPie } from "@/components/charts/sentiment-pie";
-import { ConfidenceHistogram } from "@/components/charts/confidence-histogram";
-import { EngagementBar } from "@/components/charts/engagement-bar";
-import { TopicBubble } from "@/components/charts/topic-bubble";
 import { MLInfoPanel } from "@/components/analysis/ml-info-panel";
 import { ProgressTerminal } from "@/components/analysis/progress-terminal";
-import { TopicRanking } from "@/components/results/topic-ranking";
-import { SentimentSection } from "@/components/results/sentiment-summary";
-import { TopicSlideOver } from "@/components/results/topic-slide-over";
-import { ResultsOverview } from "@/components/results/results-overview";
 import { UrlInput } from "@/components/url-input";
 import { ErrorDisplay } from "@/components/error-display";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { GlobalNav } from "@/components/navigation/global-nav";
 import { useAnalysis } from "@/hooks/useAnalysis";
-import { getAnalysisResult, getAnalysisHistory, deleteAnalysis, getCommentsByVideo } from "@/lib/api";
-import type { AnalysisResult, AnalysisHistoryItem, Topic, Comment } from "@/types";
+import { getAnalysisHistory, deleteAnalysis } from "@/lib/api";
+import type { AnalysisHistoryItem } from "@/types";
 
 export default function Home() {
+  const router = useRouter();
   const {
     isAnalyzing,
     progress,
@@ -44,16 +33,12 @@ export default function Home() {
 
   const [history, setHistory] = useState<AnalysisHistoryItem[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
-  const [historyResult, setHistoryResult] = useState<AnalysisResult | null>(null);
-  const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
-  const [slideOverOpen, setSlideOverOpen] = useState(false);
-  const [allComments, setAllComments] = useState<Comment[]>([]);
 
-  // Load history on mount and when analysis state changes
+  // Load history on mount
   useEffect(() => {
     const loadHistory = async () => {
       try {
-        const data = await getAnalysisHistory(10);
+        const data = await getAnalysisHistory(20);
         setHistory(data);
       } catch (err) {
         console.error("Failed to load history:", err);
@@ -62,150 +47,120 @@ export default function Home() {
       }
     };
     loadHistory();
-  }, [result, isAnalyzing]); // Refresh when result comes in or analysis stops (including cancel)
+  }, []);
 
-  // Load all comments when displaying results
-  const displayResult = result || historyResult;
+  // Refresh history when analysis completes
   useEffect(() => {
-    const loadComments = async () => {
-      if (displayResult?.video?.id) {
+    if (!isAnalyzing && result) {
+      const refreshHistory = async () => {
         try {
-          const comments = await getCommentsByVideo(displayResult.video.id);
-          setAllComments(comments);
+          const data = await getAnalysisHistory(20);
+          setHistory(data);
         } catch (err) {
-          console.error("Failed to load comments:", err);
-          // Fallback to sample comments from topics
-          const sampleComments = displayResult.topics.flatMap(t => t.sample_comments);
-          setAllComments(sampleComments);
+          console.error("Failed to refresh history:", err);
         }
-      }
-    };
-    loadComments();
-  }, [displayResult?.video?.id, displayResult?.topics]);
+      };
+      refreshHistory();
+    }
+  }, [isAnalyzing, result]);
+
+  // Redirect to analysis page when complete
+  useEffect(() => {
+    if (result?.id && !isAnalyzing) {
+      router.push(`/analysis/${result.id}`);
+    }
+  }, [result, isAnalyzing, router]);
 
   const handleValidUrl = useCallback(
     (url: string) => {
-      setHistoryResult(null);
-      setSelectedTopic(null);
-      setSlideOverOpen(false);
-      setAllComments([]);
       startAnalysis(url);
     },
     [startAnalysis]
   );
 
-  const handleSelectHistory = useCallback(async (item: AnalysisHistoryItem) => {
-    try {
-      const result = await getAnalysisResult(item.id);
-      setHistoryResult(result);
-      setSelectedTopic(null);
-      setSlideOverOpen(false);
-    } catch (err) {
-      console.error("Failed to load analysis:", err);
-    }
-  }, []);
+  const handleSelectHistory = useCallback(
+    (item: AnalysisHistoryItem) => {
+      router.push(`/analysis/${item.id}`);
+    },
+    [router]
+  );
 
   const handleNewAnalysis = useCallback(() => {
     reset();
-    setHistoryResult(null);
-    setSelectedTopic(null);
-    setSlideOverOpen(false);
-    setAllComments([]);
   }, [reset]);
 
-  const handleDeleteHistory = useCallback(async (id: number) => {
-    try {
-      await deleteAnalysis(id);
-      setHistory((prev) => prev.filter((item) => item.id !== id));
-      if (historyResult?.id === id) {
-        setHistoryResult(null);
+  const handleDeleteHistory = useCallback(
+    async (id: number) => {
+      try {
+        await deleteAnalysis(id);
+        setHistory((prev) => prev.filter((item) => item.id !== id));
+      } catch (err) {
+        console.error("Failed to delete analysis:", err);
       }
-    } catch (err) {
-      console.error("Failed to delete analysis:", err);
-    }
-  }, [historyResult?.id]);
-
-  const handleTopicClick = useCallback((topic: Topic) => {
-    setSelectedTopic(topic);
-    setSlideOverOpen(true);
-  }, []);
-
-  const showInputState = !displayResult && !isAnalyzing && !error;
-  const showAnalyzingState = isAnalyzing;
-  const showResultsState = displayResult && !isAnalyzing;
-  const showErrorState = error && !isAnalyzing;
-
-  // Group comments by sentiment
-  const commentsBySentiment = useMemo(() => {
-    const positive = allComments.filter(c => c.sentiment === "positive");
-    const negative = allComments.filter(c => c.sentiment === "negative");
-    const suggestion = allComments.filter(c => c.sentiment === "suggestion");
-    const neutral = allComments.filter(c => c.sentiment === "neutral");
-
-    // Sort by likes within each group
-    [positive, negative, suggestion, neutral].forEach(group => {
-      group.sort((a, b) => b.like_count - a.like_count);
-    });
-
-    return { positive, negative, suggestion, neutral };
-  }, [allComments]);
-
-  const totalForPercent = Math.max(displayResult?.total_comments || 0, 1);
-  const formatShare = (count: number) => (
-    `${((count / totalForPercent) * 100).toFixed(0)}% of comments`
+    },
+    []
   );
 
+  const showInputState = !isAnalyzing && !error;
+  const showAnalyzingState = isAnalyzing;
+  const showErrorState = error && !isAnalyzing;
+
   return (
-    <div className="h-screen w-screen overflow-hidden bg-[#FAFAFA] flex">
-      {/* Sidebar */}
-      <Sidebar
-        history={history}
-        isLoadingHistory={isLoadingHistory}
-        onNewAnalysis={handleNewAnalysis}
-        onSelectHistory={handleSelectHistory}
-        onDeleteHistory={handleDeleteHistory}
-        selectedId={displayResult?.id}
-        isAnalyzing={isAnalyzing}
-      />
+    <div className="h-screen w-screen overflow-hidden bg-[#FAF8F5] flex flex-col">
+      {/* Global Navigation */}
+      <GlobalNav />
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden">
-        {/* Video Header */}
-        <div className="px-4 pt-4">
-          <VideoHeader
-            video={displayResult?.video || null}
-            totalComments={displayResult?.total_comments || commentsFound || 0}
-            analyzedAt={displayResult?.analyzed_at}
-            isLoading={isAnalyzing && !displayResult}
-          />
-        </div>
+      <div className="flex-1 flex overflow-hidden">
+        {/* Sidebar */}
+        <Sidebar
+          history={history}
+          isLoadingHistory={isLoadingHistory}
+          onNewAnalysis={handleNewAnalysis}
+          onSelectHistory={handleSelectHistory}
+          onDeleteHistory={handleDeleteHistory}
+          selectedId={undefined}
+          isAnalyzing={isAnalyzing}
+        />
 
-        {/* Main Dashboard Content */}
-        <div className="flex-1 p-4 overflow-hidden">
+        {/* Main Content */}
+        <main className="flex-1 flex flex-col h-full overflow-hidden p-6">
           {/* Input State */}
           {showInputState && (
             <div className="h-full flex items-center justify-center fade-up">
-              <div className="w-full max-w-xl space-y-6">
-                <div className="text-center">
-                  <h1 className="text-3xl font-bold tracking-tight font-display text-stone-800">AI-Video-Comment-Analyzer</h1>
-                  <p className="mt-2 text-stone-500 font-body">
-                    AI-powered YouTube comment analysis with sentiment detection and topic modeling
+              <div className="w-full max-w-xl space-y-8">
+                {/* Hero Section */}
+                <div className="text-center space-y-3">
+                  <h1 className="text-4xl font-display font-semibold tracking-tight text-[#1E3A5F]">
+                    AI Video Comment Analyzer
+                  </h1>
+                  <p className="text-lg text-[#6B7280] font-body">
+                    Understand your audience with ML-powered sentiment analysis and topic detection
                   </p>
                 </div>
+
+                {/* URL Input */}
                 <UrlInput onValidUrl={handleValidUrl} />
-                <div className="flex items-center justify-center gap-6 text-xs text-stone-500 font-body">
+
+                {/* Feature Badges */}
+                <div className="flex items-center justify-center gap-6 text-sm text-[#6B7280] font-body">
                   <div className="flex items-center gap-2">
-                    <Heart className="h-4 w-4 text-emerald-600" />
+                    <div className="p-1.5 rounded-md bg-[#2D7A5E]/10">
+                      <Heart className="h-4 w-4 text-[#2D7A5E]" />
+                    </div>
                     <span>Sentiment Analysis</span>
                   </div>
-                  <div className="h-3 w-px bg-stone-200" />
+                  <div className="h-4 w-px bg-[#E8E4DC]" />
                   <div className="flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4 text-blue-600" />
+                    <div className="p-1.5 rounded-md bg-[#4A7C9B]/10">
+                      <MessageSquare className="h-4 w-4 text-[#4A7C9B]" />
+                    </div>
                     <span>Topic Detection</span>
                   </div>
-                  <div className="h-3 w-px bg-stone-200" />
+                  <div className="h-4 w-px bg-[#E8E4DC]" />
                   <div className="flex items-center gap-2">
-                    <Lightbulb className="h-4 w-4 text-amber-600" />
+                    <div className="p-1.5 rounded-md bg-[#D4714E]/10">
+                      <Lightbulb className="h-4 w-4 text-[#D4714E]" />
+                    </div>
                     <span>Actionable Insights</span>
                   </div>
                 </div>
@@ -215,7 +170,7 @@ export default function Home() {
 
           {/* Analyzing State */}
           {showAnalyzingState && (
-            <div className="h-full grid grid-cols-3 gap-4">
+            <div className="h-full grid grid-cols-3 gap-6">
               {/* Terminal - Takes 2 columns */}
               <div className="col-span-2">
                 <ProgressTerminal
@@ -242,25 +197,25 @@ export default function Home() {
                   processingTimeSeconds={mlMetrics.processingTimeSeconds}
                 />
 
-                {/* Animated Stats Preview */}
-                <div className="rounded-lg border bg-white p-4 space-y-3">
-                  <h4 className="text-sm font-semibold">Live Metrics</h4>
+                {/* Live Metrics */}
+                <div className="rounded-xl border border-[#E8E4DC] bg-white p-4 space-y-3 shadow-sm">
+                  <h4 className="text-sm font-semibold text-[#1E3A5F]">Live Metrics</h4>
                   <div className="space-y-2">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Comments Found</span>
-                      <span className="font-mono font-bold tabular-nums">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#6B7280]">Comments Found</span>
+                      <span className="font-mono font-semibold tabular-nums text-[#1E3A5F]">
                         {commentsFound.toLocaleString()}
                       </span>
                     </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Analyzed</span>
-                      <span className="font-mono font-bold tabular-nums text-indigo-600">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#6B7280]">Analyzed</span>
+                      <span className="font-mono font-semibold tabular-nums text-[#D4714E]">
                         {commentsAnalyzed.toLocaleString()}
                       </span>
                     </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Processing Time</span>
-                      <span className="font-mono font-bold tabular-nums">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[#6B7280]">Processing Time</span>
+                      <span className="font-mono font-semibold tabular-nums text-[#1E3A5F]">
                         {mlMetrics.processingTimeSeconds.toFixed(1)}s
                       </span>
                     </div>
@@ -278,133 +233,8 @@ export default function Home() {
               </div>
             </div>
           )}
-
-          {/* Results State */}
-          {showResultsState && displayResult && (
-            <div className="h-full flex gap-4">
-              {/* Left: Topic Ranking Sidebar */}
-              <div className="w-64 flex-shrink-0 rounded-xl border border-stone-200 bg-white overflow-hidden shadow-sm">
-                <TopicRanking
-                  topics={displayResult.topics}
-                  onTopicClick={handleTopicClick}
-                  selectedTopicId={selectedTopic?.id}
-                />
-              </div>
-
-              {/* Right: Main Content */}
-              <div className="flex-1 flex flex-col gap-4 overflow-hidden">
-                <ResultsOverview
-                  sentiment={displayResult.sentiment}
-                  totalComments={displayResult.total_comments}
-                  topics={displayResult.topics}
-                  className="fade-up stagger-1 flex-shrink-0"
-                />
-
-                {/* Stats Row */}
-                <StatsGrid className="fade-up stagger-2 flex-shrink-0">
-                  <StatCard
-                    label="Positive"
-                    value={displayResult.sentiment.positive_count}
-                    subValue={formatShare(displayResult.sentiment.positive_count)}
-                    color="love"
-                    icon={<Heart className="h-5 w-5" />}
-                  />
-                  <StatCard
-                    label="Negative"
-                    value={displayResult.sentiment.negative_count}
-                    subValue={formatShare(displayResult.sentiment.negative_count)}
-                    color="dislike"
-                    icon={<AlertTriangle className="h-5 w-5" />}
-                  />
-                  <StatCard
-                    label="Suggestions"
-                    value={displayResult.sentiment.suggestion_count}
-                    subValue={formatShare(displayResult.sentiment.suggestion_count)}
-                    color="suggestion"
-                    icon={<Lightbulb className="h-5 w-5" />}
-                  />
-                  <StatCard
-                    label="Neutral"
-                    value={displayResult.sentiment.neutral_count}
-                    subValue={formatShare(displayResult.sentiment.neutral_count)}
-                    color="neutral"
-                    icon={<MessageSquare className="h-5 w-5" />}
-                  />
-                </StatsGrid>
-
-                {/* Charts Row - 4 charts */}
-                <div className="grid grid-cols-4 gap-3 flex-shrink-0 fade-up stagger-3">
-                  <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
-                    <h4 className="text-xs font-semibold text-stone-600 mb-2">Sentiment Distribution</h4>
-                    <div className="h-36">
-                      <SentimentPie sentiment={displayResult.sentiment} />
-                    </div>
-                  </div>
-                  <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
-                    <h4 className="text-xs font-semibold text-stone-600 mb-2">Engagement by Category</h4>
-                    <div className="h-36">
-                      <EngagementBar sentiment={displayResult.sentiment} />
-                    </div>
-                  </div>
-                  <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
-                    <h4 className="text-xs font-semibold text-stone-600 mb-2">Topic Overview</h4>
-                    <div className="h-36">
-                      <TopicBubble topics={displayResult.topics} />
-                    </div>
-                  </div>
-                  <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
-                    <h4 className="text-xs font-semibold text-stone-600 mb-2">ML Confidence</h4>
-                    <div className="h-36">
-                      <ConfidenceHistogram
-                        avgConfidence={displayResult.ml_metadata?.avg_confidence || mlMetrics.avgConfidence || 0.85}
-                        distribution={displayResult.ml_metadata?.confidence_distribution}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Sentiment Sections - Scrollable */}
-                <ScrollArea className="flex-1 fade-up stagger-4">
-                  <div className="space-y-4 pr-4 pb-4">
-                    <SentimentSection
-                      sentiment="positive"
-                      summary={displayResult.summaries?.positive}
-                      topics={displayResult.topics}
-                      comments={commentsBySentiment.positive}
-                      onTopicClick={handleTopicClick}
-                      maxComments={5}
-                    />
-                    <SentimentSection
-                      sentiment="negative"
-                      summary={displayResult.summaries?.negative}
-                      topics={displayResult.topics}
-                      comments={commentsBySentiment.negative}
-                      onTopicClick={handleTopicClick}
-                      maxComments={5}
-                    />
-                    <SentimentSection
-                      sentiment="suggestion"
-                      summary={displayResult.summaries?.suggestion}
-                      topics={displayResult.topics}
-                      comments={commentsBySentiment.suggestion}
-                      onTopicClick={handleTopicClick}
-                      maxComments={5}
-                    />
-                  </div>
-                </ScrollArea>
-              </div>
-
-              {/* Topic Slide-Over */}
-              <TopicSlideOver
-                topic={selectedTopic}
-                comments={allComments}
-                open={slideOverOpen}
-                onOpenChange={setSlideOverOpen}
-              />
-            </div>
-          )}
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }
