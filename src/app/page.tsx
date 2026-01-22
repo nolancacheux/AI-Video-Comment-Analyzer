@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Heart, Lightbulb, MessageSquare, ArrowLeft, Calendar } from "lucide-react";
+import { Heart, Lightbulb, MessageSquare, ArrowLeft } from "lucide-react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { MLInfoPanel } from "@/components/analysis/ml-info-panel";
 import { ProgressTerminal } from "@/components/analysis/progress-terminal";
@@ -301,23 +301,9 @@ export default function Home() {
                             {result.title}
                           </h3>
                           <p className="text-xs text-[#6B7280] mt-1">{result.channel}</p>
-                          <div className="flex items-center gap-2 mt-2 text-xs text-[#6B7280]">
-                            {result.viewCount !== undefined && (
-                              <span>{formatViewCount(result.viewCount)}</span>
-                            )}
-                            {result.viewCount !== undefined && result.publishedAt && (
-                              <span>-</span>
-                            )}
-                            {result.publishedAt && (
-                              <span className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                {result.publishedAt}
-                              </span>
-                            )}
-                          </div>
-                          {result.description && (
-                            <p className="text-[11px] text-[#6B7280] mt-2 line-clamp-2 leading-snug">
-                              {result.description}
+                          {result.viewCount !== undefined && (
+                            <p className="text-xs text-[#6B7280] mt-1">
+                              {formatViewCount(result.viewCount)}
                             </p>
                           )}
                         </div>

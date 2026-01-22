@@ -120,10 +120,10 @@ export function UrlInput({ onValidUrl, onSearchStart, onSearchResults, disabled,
 
         const trimmed = value.trim();
         if (trimmed.length >= 3) {
-          // Debounce search by 500ms
+          // Debounce search by 300ms for faster response
           debounceTimeoutRef.current = setTimeout(() => {
             performSearch(trimmed);
-          }, 500);
+          }, 300);
         }
       }
     },

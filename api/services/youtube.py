@@ -205,7 +205,7 @@ class YouTubeExtractor:
 
         logger.info(f"[YouTube] Searching for: '{query}' (max {max_results} results)")
         try:
-            # Use full metadata extraction for better search results
+            # Use --flat-playlist for fast search (no full metadata download)
             result = subprocess.run(
                 [
                     "yt-dlp",
@@ -213,8 +213,7 @@ class YouTubeExtractor:
                     "--dump-json",
                     "--no-download",
                     "--no-warnings",
-                    "--ignore-errors",
-                    "--no-playlist",
+                    "--flat-playlist",
                 ],
                 capture_output=True,
                 text=True,
@@ -236,7 +235,7 @@ class YouTubeExtractor:
                     if not video_id:
                         continue
 
-                    # Format duration
+                    # Format duration (flat-playlist gives duration in seconds)
                     duration_secs = data.get("duration")
                     duration_str = None
                     if duration_secs:
@@ -247,33 +246,16 @@ class YouTubeExtractor:
                         else:
                             duration_str = f"{minutes}:{seconds:02d}"
 
-                    # Format publish date
-                    published_at = None
-                    if upload_date := data.get("upload_date"):
-                        try:
-                            dt = datetime.strptime(upload_date, "%Y%m%d")
-                            published_at = dt.strftime("%d/%m/%Y")
-                        except ValueError:
-                            pass
-
-                    # Get description (truncated)
-                    description = data.get("description", "")
-                    if description and len(description) > 150:
-                        description = description[:150].rsplit(" ", 1)[0] + "..."
-
                     results.append(
                         SearchResultData(
                             id=video_id,
                             title=data.get("title", "Unknown"),
                             channel=data.get("channel", data.get("uploader", "Unknown")),
-                            thumbnail=data.get(
-                                "thumbnail",
-                                f"https://i.ytimg.com/vi/{video_id}/maxresdefault.jpg",
-                            ),
+                            thumbnail=f"https://i.ytimg.com/vi/{video_id}/mqdefault.jpg",
                             duration=duration_str,
                             view_count=data.get("view_count"),
-                            published_at=published_at,
-                            description=description,
+                            published_at=None,  # Not available in flat mode
+                            description=None,  # Not available in flat mode
                         )
                     )
                 except json.JSONDecodeError:
