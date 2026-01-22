@@ -1,64 +1,21 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback } from "react";
 import { Input } from "@/components/ui/input";
-import { isValidYouTubeUrl, extractVideoId, getVideoThumbnail, searchVideos, isUrl } from "@/lib/api";
+import { isValidYouTubeUrl, extractVideoId, getVideoThumbnail, isUrl } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import type { SearchResult } from "@/types";
 
 interface UrlInputProps {
   onValidUrl: (url: string) => void;
-  onSearchStart?: (query: string) => void;
-  onSearchResults?: (results: SearchResult[], query: string) => void;
+  onSearch?: (query: string) => void;
   disabled?: boolean;
   className?: string;
 }
 
-export function UrlInput({ onValidUrl, onSearchStart, onSearchResults, disabled, className }: UrlInputProps) {
+export function UrlInput({ onValidUrl, onSearch, disabled, className }: UrlInputProps) {
   const [url, setUrl] = useState("");
   const [isValid, setIsValid] = useState<boolean | null>(null);
   const [videoId, setVideoId] = useState<string | null>(null);
-  const [isSearching, setIsSearching] = useState(false);
-  const abortControllerRef = useRef<AbortController | null>(null);
-  const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  // Clean up on unmount
-  useEffect(() => {
-    return () => {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, []);
-
-  const performSearch = useCallback(async (query: string) => {
-    // Cancel any pending request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-
-    setIsSearching(true);
-    onSearchStart?.(query);
-
-    try {
-      const results = await searchVideos(query, 8, controller.signal);
-      onSearchResults?.(results, query);
-    } catch (error) {
-      if ((error as Error).name !== "AbortError") {
-        console.error("Search failed:", error);
-        onSearchResults?.([], query);
-      }
-    } finally {
-      setIsSearching(false);
-    }
-  }, [onSearchStart, onSearchResults]);
 
   const validateAndTrigger = useCallback(
     (value: string) => {
@@ -96,11 +53,6 @@ export function UrlInput({ onValidUrl, onSearchStart, onSearchResults, disabled,
       const value = e.target.value;
       setUrl(value);
 
-      // Clear previous debounce
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
-      }
-
       // Check if it's a URL
       if (isUrl(value)) {
         // URL mode - validate immediately
@@ -119,8 +71,15 @@ export function UrlInput({ onValidUrl, onSearchStart, onSearchResults, disabled,
         setVideoId(null);
       }
     },
-    [validateAndTrigger, performSearch]
+    [validateAndTrigger]
   );
+
+  const triggerSearch = useCallback(() => {
+    const trimmed = url.trim();
+    if (trimmed.length >= 3 && !isUrl(trimmed)) {
+      onSearch?.(trimmed);
+    }
+  }, [url, onSearch]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -132,12 +91,12 @@ export function UrlInput({ onValidUrl, onSearchStart, onSearchResults, disabled,
         if (isUrl(trimmed)) {
           validateAndTrigger(trimmed);
         } else if (trimmed.length >= 3) {
-          // Otherwise trigger search immediately
-          performSearch(trimmed);
+          // Otherwise trigger search
+          onSearch?.(trimmed);
         }
       }
     },
-    [url, validateAndTrigger, performSearch]
+    [url, validateAndTrigger, onSearch]
   );
 
   const isSearchMode = url.trim().length >= 3 && !isUrl(url);
@@ -146,7 +105,6 @@ export function UrlInput({ onValidUrl, onSearchStart, onSearchResults, disabled,
     <div className={cn("space-y-4", className)}>
       <div className="relative">
         <Input
-          ref={inputRef}
           type="text"
           placeholder="Paste a YouTube URL or search for videos..."
           value={url}
@@ -161,29 +119,7 @@ export function UrlInput({ onValidUrl, onSearchStart, onSearchResults, disabled,
           )}
         />
         <div className="absolute right-4 top-1/2 -translate-y-1/2">
-          {isSearching && (
-            <svg
-              className="animate-spin h-5 w-5 text-muted-foreground"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              />
-            </svg>
-          )}
-          {!isSearching && isValid === true && (
+          {isValid === true && (
             <svg
               className="w-6 h-6 text-emerald-500"
               fill="none"
@@ -198,7 +134,7 @@ export function UrlInput({ onValidUrl, onSearchStart, onSearchResults, disabled,
               />
             </svg>
           )}
-          {!isSearching && isValid === false && (
+          {isValid === false && (
             <svg
               className="w-6 h-6 text-rose-500"
               fill="none"
@@ -213,15 +149,10 @@ export function UrlInput({ onValidUrl, onSearchStart, onSearchResults, disabled,
               />
             </svg>
           )}
-          {!isSearching && isValid === null && isSearchMode && (
+          {isValid === null && isSearchMode && (
             <button
               type="button"
-              onClick={() => {
-                const trimmed = url.trim();
-                if (trimmed.length >= 3) {
-                  performSearch(trimmed);
-                }
-              }}
+              onClick={triggerSearch}
               className="p-1 rounded hover:bg-muted transition-colors"
               title="Search YouTube"
             >
@@ -240,7 +171,7 @@ export function UrlInput({ onValidUrl, onSearchStart, onSearchResults, disabled,
               </svg>
             </button>
           )}
-          {!isSearching && isValid === null && !isSearchMode && !url.trim() && (
+          {isValid === null && !isSearchMode && !url.trim() && (
             <svg
               className="w-5 h-5 text-muted-foreground"
               fill="none"

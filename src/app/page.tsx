@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Heart, Lightbulb, MessageSquare, ArrowLeft } from "lucide-react";
 import { Sidebar } from "@/components/layout/sidebar";
@@ -10,7 +10,7 @@ import { UrlInput } from "@/components/url-input";
 import { ErrorDisplay } from "@/components/error-display";
 import { GlobalNav } from "@/components/navigation/global-nav";
 import { useAnalysis } from "@/hooks/useAnalysis";
-import { getAnalysisHistory, deleteAnalysis } from "@/lib/api";
+import { getAnalysisHistory, deleteAnalysis, searchVideos } from "@/lib/api";
 import type { AnalysisHistoryItem, SearchResult } from "@/types";
 
 export default function Home() {
@@ -39,6 +39,7 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchView, setShowSearchView] = useState(false);
+  const searchAbortRef = useRef<AbortController | null>(null);
 
   // Load history on mount
   useEffect(() => {
@@ -107,18 +108,32 @@ export default function Home() {
     []
   );
 
-  // Search handlers
-  const handleSearchResults = useCallback((results: SearchResult[], query: string) => {
-    setSearchResults(results);
-    setSearchQuery(query);
-    setShowSearchView(true);
-    setIsSearching(false);
-  }, []);
+  // Search handler - runs in parent to avoid abort on UrlInput unmount
+  const handleSearch = useCallback(async (query: string) => {
+    // Cancel any pending search
+    if (searchAbortRef.current) {
+      searchAbortRef.current.abort();
+    }
 
-  const handleSearchStart = useCallback((query: string) => {
+    const controller = new AbortController();
+    searchAbortRef.current = controller;
+
+    // Show search view immediately with loading state
     setSearchQuery(query);
     setIsSearching(true);
     setShowSearchView(true);
+
+    try {
+      const results = await searchVideos(query, 8, controller.signal);
+      setSearchResults(results);
+    } catch (error) {
+      if ((error as Error).name !== "AbortError") {
+        console.error("Search failed:", error);
+        setSearchResults([]);
+      }
+    } finally {
+      setIsSearching(false);
+    }
   }, []);
 
   const handleSelectSearchResult = useCallback((result: SearchResult) => {
@@ -184,8 +199,7 @@ export default function Home() {
                 {/* URL Input */}
                 <UrlInput
                   onValidUrl={handleValidUrl}
-                  onSearchStart={handleSearchStart}
-                  onSearchResults={handleSearchResults}
+                  onSearch={handleSearch}
                 />
 
                 {/* Feature Badges */}
