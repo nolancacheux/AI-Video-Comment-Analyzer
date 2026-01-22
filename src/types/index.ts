@@ -141,6 +141,11 @@ export interface ProgressEvent {
     ml_total_tokens?: number;
     ml_comments_per_second?: number;
     // ABSA metrics
+    absa_processed?: number;
+    absa_total?: number;
+    absa_speed?: number;
+    absa_batch?: number;
+    absa_total_batches?: number;
     absa_health_score?: number;
     absa_dominant_aspects?: string[];
   };
