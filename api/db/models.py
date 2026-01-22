@@ -55,6 +55,7 @@ class Comment(Base):
 
     id = Column(String, primary_key=True)
     video_id = Column(String, ForeignKey("videos.id"), nullable=False)
+    analysis_id = Column(Integer, ForeignKey("analyses.id"), nullable=True)
     author_name = Column(String)
     author_profile_image_url = Column(String)
     text = Column(Text, nullable=False)
@@ -66,6 +67,7 @@ class Comment(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     video = relationship("Video", back_populates="comments")
+    analysis = relationship("Analysis", back_populates="comments")
     topic_associations = relationship(
         "TopicComment", back_populates="comment", cascade="all, delete-orphan"
     )
@@ -87,10 +89,15 @@ class Analysis(Base):
     recommendations = Column(JSON, default=list)
     absa_data = Column(JSON)  # Stores ABSA aggregation and insights (legacy)
     summaries_data = Column(JSON)  # Stores AI-generated summaries
+    # ML metrics storage
+    ml_tokens = Column(Integer, default=0)
+    ml_processing_time = Column(Float, default=0.0)
+    ml_avg_confidence = Column(Float, default=0.0)
     analyzed_at = Column(DateTime, default=datetime.utcnow)
 
     video = relationship("Video", back_populates="analyses")
     topics = relationship("Topic", back_populates="analysis", cascade="all, delete-orphan")
+    comments = relationship("Comment", back_populates="analysis", cascade="all, delete-orphan")
 
 
 class Topic(Base):
