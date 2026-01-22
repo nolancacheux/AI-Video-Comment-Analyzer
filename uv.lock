@@ -11,12 +11,16 @@ name = "ai-video-comment-analyzer"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "bertopic" },
     { name = "fastapi" },
     { name = "httpx" },
     { name = "huggingface-hub" },
     { name = "pydantic" },
     { name = "python-dotenv" },
+    { name = "sentence-transformers" },
     { name = "sqlalchemy" },
+    { name = "torch" },
+    { name = "transformers" },
     { name = "uvicorn", extra = ["standard"] },
     { name = "yt-dlp" },
 ]
@@ -29,16 +33,10 @@ dev = [
     { name = "pytest-cov" },
     { name = "ruff" },
 ]
-ml = [
-    { name = "bertopic" },
-    { name = "sentence-transformers" },
-    { name = "torch" },
-    { name = "transformers" },
-]
 
 [package.metadata]
 requires-dist = [
-    { name = "bertopic", marker = "extra == 'ml'", specifier = ">=0.16.0" },
+    { name = "bertopic", specifier = ">=0.16.0" },
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.27.0" },
@@ -49,14 +47,14 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.8.0" },
-    { name = "sentence-transformers", marker = "extra == 'ml'", specifier = ">=3.0.0" },
+    { name = "sentence-transformers", specifier = ">=3.0.0" },
     { name = "sqlalchemy", specifier = ">=2.0.0" },
-    { name = "torch", marker = "extra == 'ml'", specifier = ">=2.5.0" },
-    { name = "transformers", marker = "extra == 'ml'", specifier = ">=4.47.0" },
+    { name = "torch", specifier = ">=2.5.0" },
+    { name = "transformers", specifier = ">=4.47.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.34.0" },
     { name = "yt-dlp", specifier = ">=2024.0.0" },
 ]
-provides-extras = ["ml", "dev"]
+provides-extras = ["dev"]
 
 [[package]]
 name = "annotated-doc"

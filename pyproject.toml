@@ -18,15 +18,13 @@ dependencies = [
     "huggingface-hub>=0.36.0",
     "python-dotenv>=1.2.1",
     "httpx>=0.28.1",
-]
-
-[project.optional-dependencies]
-ml = [
     "transformers>=4.47.0",
     "bertopic>=0.16.0",
     "torch>=2.5.0",
     "sentence-transformers>=3.0.0",
 ]
+
+[project.optional-dependencies]
 dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.24.0",
@@ -77,8 +75,5 @@ exclude_lines = [
     "pragma: no cover",
     "if TYPE_CHECKING:",
     "raise NotImplementedError",
-    "if ML_AVAILABLE:",
-    "if not self._ml_available:",
-    "except ImportError:",
 ]
 fail_under = 65
