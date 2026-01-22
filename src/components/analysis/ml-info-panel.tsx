@@ -1,38 +1,125 @@
 "use client";
 
-import * as React from "react";
-import { Cpu, Zap, Clock, Gauge, Database, Brain } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+import { Brain, MessageSquare, Tags, Sparkles, CheckCircle2, Loader2, Clock, Zap, Database } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { PipelineModels, ModelStage } from "@/types";
 
 interface MLInfoPanelProps {
   isProcessing: boolean;
-  modelName?: string;
+  pipelineModels: PipelineModels;
   processingSpeed?: number;
   tokensProcessed?: number;
-  avgConfidence?: number;
-  currentBatch?: number;
-  totalBatches?: number;
   processingTimeSeconds?: number;
+}
+
+const stageLabels: Record<ModelStage, string> = {
+  pending: "Waiting",
+  loading: "Loading",
+  active: "Processing",
+  embedding: "Embedding",
+  clustering: "Clustering",
+  connecting: "Connecting",
+  generating: "Generating",
+  complete: "Complete",
+  unavailable: "Unavailable",
+};
+
+function ModelCard({
+  icon,
+  label,
+  modelName,
+  stage,
+  detail,
+  color,
+}: Readonly<{
+  icon: React.ReactNode;
+  label: string;
+  modelName: string;
+  stage: ModelStage;
+  detail?: string;
+  color: string;
+}>): JSX.Element {
+  const isActive = stage !== "pending" && stage !== "complete" && stage !== "unavailable";
+  const isComplete = stage === "complete";
+  const isUnavailable = stage === "unavailable";
+
+  const renderIcon = (): React.ReactNode => {
+    if (isComplete) {
+      return <CheckCircle2 className="h-4 w-4 text-emerald-600" />;
+    }
+    if (isActive) {
+      return <Loader2 className="h-4 w-4 animate-spin" style={{ color }} />;
+    }
+    return <span className={isUnavailable ? "text-slate-400" : "text-slate-500"}>{icon}</span>;
+  };
+
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-3 p-2.5 rounded-lg border transition-all",
+        isActive && "bg-[#D4714E]/5 border-[#D4714E]/20",
+        isComplete && "bg-emerald-50/50 border-emerald-200/50",
+        isUnavailable && "bg-slate-50 border-slate-200 opacity-60",
+        !isActive && !isComplete && !isUnavailable && "bg-slate-50/50 border-slate-200/50"
+      )}
+    >
+      {/* Icon */}
+      <div
+        className={cn(
+          "h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0",
+          isActive && `bg-[${color}]/10`,
+          isComplete && "bg-emerald-100",
+          !isActive && !isComplete && "bg-slate-100"
+        )}
+        style={isActive ? { backgroundColor: `${color}15` } : undefined}
+      >
+        {renderIcon()}
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-slate-700">{label}</span>
+          {isActive && (
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[#D4714E]/10 text-[#D4714E]">
+              {stageLabels[stage]}
+            </span>
+          )}
+        </div>
+        <p className="text-[10px] font-mono text-slate-500 truncate" title={modelName}>
+          {formatModelName(modelName)}
+        </p>
+      </div>
+
+      {/* Detail/Status */}
+      <div className="text-right flex-shrink-0">
+        {detail && isActive && (
+          <span className="text-[10px] font-medium text-[#D4714E] tabular-nums">{detail}</span>
+        )}
+        {isComplete && <span className="text-[10px] font-medium text-emerald-600">Done</span>}
+        {isUnavailable && <span className="text-[10px] text-slate-400">Skipped</span>}
+      </div>
+    </div>
+  );
+}
+
+function formatModelName(name: string): string {
+  const parts = name.split("/");
+  return parts.at(-1) ?? name;
 }
 
 export function MLInfoPanel({
   isProcessing,
-  modelName = "nlptown/bert-base-multilingual-uncased-sentiment",
+  pipelineModels,
   processingSpeed = 0,
   tokensProcessed = 0,
-  avgConfidence = 0,
-  currentBatch = 0,
-  totalBatches = 0,
   processingTimeSeconds = 0,
-}: MLInfoPanelProps): JSX.Element {
-  const formatModelName = (name: string) => {
-    // Show only the model name part for readability
-    const parts = name.split("/");
-    return parts[parts.length - 1];
-  };
+}: Readonly<MLInfoPanelProps>): JSX.Element {
+  const hasStarted = processingTimeSeconds > 0 || isProcessing;
 
   return (
     <div className="rounded-lg border bg-white overflow-hidden">
+      {/* Header */}
       <div className="px-4 py-2.5 border-b bg-[#FAFAFA] flex items-center gap-2">
         <Brain className="h-4 w-4 text-[#D4714E]" />
         <h3 className="text-sm font-semibold tracking-tight">ML Pipeline</h3>
@@ -48,110 +135,64 @@ export function MLInfoPanel({
       </div>
 
       <div className="p-3 space-y-3">
-        {/* Model Info */}
-        <div className="flex items-start gap-2">
-          <div className="h-7 w-7 rounded bg-slate-100 flex items-center justify-center flex-shrink-0">
-            <Cpu className="h-4 w-4 text-slate-600" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
-              Model
-            </p>
-            <p className="text-xs font-mono font-medium truncate" title={modelName}>
-              {formatModelName(modelName)}
-            </p>
-          </div>
+        {/* Model Cards */}
+        <div className="space-y-2">
+          <ModelCard
+            icon={<MessageSquare className="h-4 w-4" />}
+            label="Sentiment Analysis"
+            modelName={pipelineModels.sentiment.name}
+            stage={pipelineModels.sentiment.stage}
+            detail={pipelineModels.sentiment.detail}
+            color="#2D7A5E"
+          />
+          <ModelCard
+            icon={<Tags className="h-4 w-4" />}
+            label="Topic Detection"
+            modelName={pipelineModels.topics.name}
+            stage={pipelineModels.topics.stage}
+            detail={pipelineModels.topics.detail}
+            color="#9B7B5B"
+          />
+          <ModelCard
+            icon={<Sparkles className="h-4 w-4" />}
+            label="AI Summaries"
+            modelName={pipelineModels.summaries.name}
+            stage={pipelineModels.summaries.stage}
+            detail={pipelineModels.summaries.detail}
+            color="#D4714E"
+          />
         </div>
 
-        {/* Processing Stats - Only show when processing or after */}
-        {(isProcessing || processingTimeSeconds > 0) && (
-          <>
-            <div className="grid grid-cols-2 gap-2">
-              {/* Speed */}
-              <div className="rounded bg-slate-50 p-2">
-                <div className="flex items-center gap-1.5">
-                  <Zap className="h-3 w-3 text-amber-500" />
-                  <span className="text-[10px] text-muted-foreground">Speed</span>
-                </div>
-                <p className="text-sm font-bold tabular-nums mt-0.5">
-                  {processingSpeed.toFixed(1)}
-                  <span className="text-[10px] font-normal text-muted-foreground ml-1">
-                    /sec
-                  </span>
-                </p>
+        {/* Stats - Only show when processing or after */}
+        {hasStarted && (
+          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100">
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-1 text-slate-400">
+                <Zap className="h-3 w-3" />
               </div>
-
-              {/* Tokens */}
-              <div className="rounded bg-slate-50 p-2">
-                <div className="flex items-center gap-1.5">
-                  <Database className="h-3 w-3 text-blue-500" />
-                  <span className="text-[10px] text-muted-foreground">Tokens</span>
-                </div>
-                <p className="text-sm font-bold tabular-nums mt-0.5">
-                  {tokensProcessed.toLocaleString()}
-                </p>
-              </div>
-
-              {/* Confidence */}
-              <div className="rounded bg-slate-50 p-2">
-                <div className="flex items-center gap-1.5">
-                  <Gauge className="h-3 w-3 text-emerald-500" />
-                  <span className="text-[10px] text-muted-foreground">Confidence</span>
-                </div>
-                <p className="text-sm font-bold tabular-nums mt-0.5">
-                  {(avgConfidence * 100).toFixed(1)}%
-                </p>
-              </div>
-
-              {/* Time */}
-              <div className="rounded bg-slate-50 p-2">
-                <div className="flex items-center gap-1.5">
-                  <Clock className="h-3 w-3 text-[#D4714E]" />
-                  <span className="text-[10px] text-muted-foreground">Time</span>
-                </div>
-                <p className="text-sm font-bold tabular-nums mt-0.5">
-                  {processingTimeSeconds.toFixed(1)}s
-                </p>
-              </div>
+              <p className="text-sm font-bold tabular-nums text-slate-700">
+                {processingSpeed.toFixed(1)}
+                <span className="text-[9px] font-normal text-slate-400">/s</span>
+              </p>
+              <p className="text-[9px] text-slate-400">Speed</p>
             </div>
-
-            {/* Batch Progress */}
-            {isProcessing && totalBatches > 0 && (
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-muted-foreground">
-                    Batch Progress
-                  </span>
-                  <span className="text-[10px] font-medium tabular-nums">
-                    {currentBatch}/{totalBatches}
-                  </span>
-                </div>
-                <Progress
-                  value={(currentBatch / totalBatches) * 100}
-                  className="h-1.5"
-                />
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-1 text-slate-400">
+                <Database className="h-3 w-3" />
               </div>
-            )}
-          </>
-        )}
-
-        {/* Embedding visualization when processing */}
-        {isProcessing && (
-          <div className="rounded bg-[#D4714E]/5 p-2">
-            <p className="text-[10px] text-[#D4714E] font-medium mb-1.5">
-              Generating Embeddings
-            </p>
-            <div className="flex gap-0.5">
-              {Array.from({ length: 20 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="flex-1 h-3 rounded-sm bg-[#D4714E]/20"
-                  style={{
-                    animation: `pulse 1.5s ease-in-out ${i * 0.1}s infinite`,
-                    opacity: 0.3 + Math.random() * 0.7,
-                  }}
-                />
-              ))}
+              <p className="text-sm font-bold tabular-nums text-slate-700">
+                {tokensProcessed.toLocaleString()}
+              </p>
+              <p className="text-[9px] text-slate-400">Tokens</p>
+            </div>
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-1 text-slate-400">
+                <Clock className="h-3 w-3" />
+              </div>
+              <p className="text-sm font-bold tabular-nums text-slate-700">
+                {processingTimeSeconds.toFixed(1)}s
+              </p>
+              <p className="text-[9px] text-slate-400">Time</p>
             </div>
           </div>
         )}

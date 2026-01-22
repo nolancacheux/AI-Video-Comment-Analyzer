@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import type { AnalysisResult, ProgressEvent, AnalysisStage } from "@/types";
+import type { AnalysisResult, ProgressEvent, AnalysisStage, PipelineModels } from "@/types";
 import { analyzeVideo, getAnalysisResult } from "@/lib/api";
 
 interface MLMetrics {
@@ -13,6 +13,24 @@ interface MLMetrics {
   totalBatches: number;
   processingTimeSeconds: number;
 }
+
+const initialPipelineModels: PipelineModels = {
+  sentiment: {
+    name: "nlptown/bert-base-multilingual-uncased-sentiment",
+    displayName: "BERT Sentiment",
+    stage: "pending",
+  },
+  topics: {
+    name: "sentence-transformers/all-MiniLM-L6-v2",
+    displayName: "MiniLM Embeddings",
+    stage: "pending",
+  },
+  summaries: {
+    name: "llama3.2:3b",
+    displayName: "Ollama LLM",
+    stage: "pending",
+  },
+};
 
 interface UseAnalysisState {
   isAnalyzing: boolean;
@@ -26,6 +44,7 @@ interface UseAnalysisState {
   commentsFound: number;
   commentsAnalyzed: number;
   mlMetrics: MLMetrics;
+  pipelineModels: PipelineModels;
   startTime: number | null;
 }
 
@@ -58,6 +77,7 @@ export function useAnalysis(): UseAnalysisReturn {
     commentsFound: 0,
     commentsAnalyzed: 0,
     mlMetrics: initialMLMetrics,
+    pipelineModels: initialPipelineModels,
     startTime: null,
   });
 
@@ -112,6 +132,7 @@ export function useAnalysis(): UseAnalysisReturn {
       commentsFound: 0,
       commentsAnalyzed: 0,
       mlMetrics: initialMLMetrics,
+      pipelineModels: initialPipelineModels,
       startTime: null,
     });
   }, []);
@@ -139,6 +160,7 @@ export function useAnalysis(): UseAnalysisReturn {
       commentsFound: 0,
       commentsAnalyzed: 0,
       mlMetrics: initialMLMetrics,
+      pipelineModels: initialPipelineModels,
       startTime: now,
     });
 
@@ -197,6 +219,64 @@ export function useAnalysis(): UseAnalysisReturn {
           }
         }
 
+        // Update pipeline model statuses based on stage
+        const getPipelineUpdates = (prev: PipelineModels): PipelineModels => {
+          const updates = { ...prev };
+
+          // Sentiment model status
+          if (event.stage === "analyzing_sentiment") {
+            const isComplete = event.data?.ml_processing_time_seconds !== undefined;
+            const detail = event.data?.ml_processed
+              ? `${event.data.ml_processed}/${event.data.ml_total}`
+              : undefined;
+            updates.sentiment = {
+              ...prev.sentiment,
+              stage: isComplete ? "complete" : "active",
+              detail,
+            };
+          } else if (
+            event.stage === "detecting_topics" ||
+            event.stage === "generating_summaries" ||
+            event.stage === "complete"
+          ) {
+            updates.sentiment = { ...prev.sentiment, stage: "complete" };
+          }
+
+          // Topics model status
+          if (event.stage === "detecting_topics") {
+            const modelStage = event.data?.model_stage || "active";
+            let detail: string | undefined;
+            if (event.data?.category) {
+              detail = event.data.category;
+            } else if (event.data?.topics_found !== undefined) {
+              detail = `${event.data.topics_found} topics`;
+            }
+            updates.topics = {
+              ...prev.topics,
+              name: event.data?.model_name || prev.topics.name,
+              stage: modelStage,
+              detail,
+            };
+          } else if (event.stage === "generating_summaries" || event.stage === "complete") {
+            updates.topics = { ...prev.topics, stage: "complete" };
+          }
+
+          // Summaries model status
+          if (event.stage === "generating_summaries") {
+            const modelStage = event.data?.model_stage || "active";
+            updates.summaries = {
+              ...prev.summaries,
+              name: event.data?.model_name || prev.summaries.name,
+              stage: modelStage,
+              detail: event.data?.category,
+            };
+          } else if (event.stage === "complete") {
+            updates.summaries = { ...prev.summaries, stage: "complete" };
+          }
+
+          return updates;
+        };
+
         setState((prev) => ({
           ...prev,
           progress: event.progress,
@@ -210,6 +290,7 @@ export function useAnalysis(): UseAnalysisReturn {
             ...prev.mlMetrics,
             ...mlUpdates,
           },
+          pipelineModels: getPipelineUpdates(prev.pipelineModels),
         }));
 
         if (event.stage === "error") {

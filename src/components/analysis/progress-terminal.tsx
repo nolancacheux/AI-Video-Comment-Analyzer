@@ -24,6 +24,7 @@ interface ProgressTerminalProps {
   videoTitle?: string;
   commentsFound?: number;
   commentsAnalyzed?: number;
+  currentMessage?: string;
   onCancel?: () => void;
 }
 
@@ -72,6 +73,7 @@ export function ProgressTerminal({
   videoTitle,
   commentsFound,
   commentsAnalyzed,
+  currentMessage,
   onCancel,
 }: ProgressTerminalProps): JSX.Element {
   const getStageStatus = (stageId: AnalysisStage) => {
@@ -195,6 +197,12 @@ export function ProgressTerminal({
                         />
                       </div>
                     </div>
+                  )}
+                  {/* Show detailed message for topic detection and summarization */}
+                  {status === "active" && (stage.id === "detecting_topics" || stage.id === "generating_summaries") && currentMessage && (
+                    <p className="text-xs mt-1 text-[#D4714E] font-medium">
+                      {currentMessage}
+                    </p>
                   )}
                 </div>
               </div>

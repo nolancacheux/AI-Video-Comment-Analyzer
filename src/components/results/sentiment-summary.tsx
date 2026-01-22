@@ -15,6 +15,7 @@ interface SentimentSectionProps {
   comments: Comment[];
   onTopicClick?: (topic: Topic) => void;
   maxComments?: number;
+  generatedBy?: string;
 }
 
 const sentimentConfig: Record<SentimentType, {
@@ -94,6 +95,7 @@ export function SentimentSection({
   comments,
   onTopicClick,
   maxComments = 5,
+  generatedBy,
 }: SentimentSectionProps): JSX.Element | null {
   const [expanded, setExpanded] = useState(false);
   const [sortBy, setSortBy] = useState<SortBy>("likes");
@@ -189,6 +191,12 @@ export function SentimentSection({
                 <span>Summary</span>
                 <span className="h-3 w-px bg-stone-200" />
                 <span>Based on {summary.comment_count} comments</span>
+                {generatedBy && (
+                  <>
+                    <span className="h-3 w-px bg-stone-200" />
+                    <span className="normal-case text-[#D4714E] font-medium">{generatedBy}</span>
+                  </>
+                )}
               </div>
               <p className="text-sm text-stone-700 leading-relaxed">
                 {summaryExpanded || !isSummaryTruncated ? summaryText : summaryPreview}

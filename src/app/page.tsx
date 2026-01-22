@@ -19,6 +19,7 @@ export default function Home(): JSX.Element {
     isAnalyzing,
     progress,
     stage,
+    message,
     logs,
     result,
     error,
@@ -26,6 +27,7 @@ export default function Home(): JSX.Element {
     commentsFound,
     commentsAnalyzed,
     mlMetrics,
+    pipelineModels,
     startAnalysis,
     cancelAnalysis,
     reset,
@@ -341,6 +343,7 @@ export default function Home(): JSX.Element {
                   videoTitle={videoTitle || undefined}
                   commentsFound={commentsFound || undefined}
                   commentsAnalyzed={commentsAnalyzed || undefined}
+                  currentMessage={message || undefined}
                   onCancel={cancelAnalysis}
                 />
               </div>
@@ -349,12 +352,9 @@ export default function Home(): JSX.Element {
               <div className="space-y-4">
                 <MLInfoPanel
                   isProcessing={true}
-                  modelName={mlMetrics.modelName}
+                  pipelineModels={pipelineModels}
                   processingSpeed={mlMetrics.processingSpeed}
                   tokensProcessed={mlMetrics.tokensProcessed}
-                  avgConfidence={mlMetrics.avgConfidence}
-                  currentBatch={mlMetrics.currentBatch}
-                  totalBatches={mlMetrics.totalBatches}
                   processingTimeSeconds={mlMetrics.processingTimeSeconds}
                 />
 

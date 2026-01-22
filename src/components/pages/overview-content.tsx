@@ -183,6 +183,7 @@ export function OverviewContent({ analysis, comments }: OverviewContentProps): J
             topics={topics}
             commentCount={sentiment.positive_count}
             totalLikes={likesBySentiment.positive}
+            generatedBy={summaries?.generated_by}
           />
           <SummaryCard
             sentiment="negative"
@@ -190,6 +191,7 @@ export function OverviewContent({ analysis, comments }: OverviewContentProps): J
             topics={topics}
             commentCount={sentiment.negative_count}
             totalLikes={likesBySentiment.negative}
+            generatedBy={summaries?.generated_by}
           />
           <SummaryCard
             sentiment="suggestion"
@@ -197,6 +199,7 @@ export function OverviewContent({ analysis, comments }: OverviewContentProps): J
             topics={topics}
             commentCount={sentiment.suggestion_count}
             totalLikes={likesBySentiment.suggestion}
+            generatedBy={summaries?.generated_by}
           />
         </div>
       </div>

@@ -134,6 +134,21 @@ export interface AnalysisResult {
   absa?: ABSAResult;  // Kept for backward compatibility
 }
 
+export type ModelStage = "pending" | "loading" | "embedding" | "clustering" | "complete" | "connecting" | "generating" | "unavailable" | "active";
+
+export interface ModelStatus {
+  name: string;
+  displayName: string;
+  stage: ModelStage;
+  detail?: string;
+}
+
+export interface PipelineModels {
+  sentiment: ModelStatus;
+  topics: ModelStatus;
+  summaries: ModelStatus;
+}
+
 export interface ProgressEvent {
   stage: AnalysisStage;
   message: string;
@@ -143,7 +158,7 @@ export interface ProgressEvent {
     video_title?: string;
     video_id?: string;
     analysis_id?: number;
-    // Real-time ML metrics
+    // Real-time ML metrics (sentiment analysis)
     ml_batch?: number;
     ml_total_batches?: number;
     ml_processed?: number;
@@ -156,14 +171,13 @@ export interface ProgressEvent {
     ml_processing_time_seconds?: number;
     ml_total_tokens?: number;
     ml_comments_per_second?: number;
-    // ABSA metrics
-    absa_processed?: number;
-    absa_total?: number;
-    absa_speed?: number;
-    absa_batch?: number;
-    absa_total_batches?: number;
-    absa_health_score?: number;
-    absa_dominant_aspects?: string[];
+    // Model-specific progress (topic detection, summarization)
+    model_name?: string;
+    model_stage?: ModelStage;
+    category?: string;
+    category_count?: number;
+    comment_count?: number;
+    topics_found?: number;
   };
 }
 

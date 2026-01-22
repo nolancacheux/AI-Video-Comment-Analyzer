@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Heart, AlertTriangle, Lightbulb, MessageSquare, ChevronDown, ChevronUp } from "lucide-react";
+import { Heart, AlertTriangle, Lightbulb, MessageSquare, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SentimentType, SentimentSummaryText, Topic } from "@/types";
 
@@ -11,6 +11,7 @@ interface SummaryCardProps {
   topics: Topic[];
   commentCount: number;
   totalLikes: number;
+  generatedBy?: string;
   className?: string;
 }
 
@@ -55,6 +56,7 @@ export function SummaryCard({
   topics,
   commentCount,
   totalLikes,
+  generatedBy,
   className,
 }: SummaryCardProps): JSX.Element {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -124,9 +126,17 @@ export function SummaryCard({
 
         {/* Summary / Action */}
         <div>
-          <h4 className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wider mb-0.5">
-            Summary
-          </h4>
+          <div className="flex items-center gap-2 mb-0.5">
+            <h4 className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wider">
+              Summary
+            </h4>
+            {hasSummary && generatedBy && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#D4714E]/10 text-[#D4714E]">
+                <Sparkles className="h-2.5 w-2.5" />
+                <span className="text-[9px] font-medium">{generatedBy}</span>
+              </span>
+            )}
+          </div>
           {hasSummary ? (
             <div>
               <p
