@@ -92,6 +92,15 @@ export async function getLatestAnalysisForVideo(
 
 import type { Comment } from "@/types";
 
+export async function getCommentsByAnalysis(analysisId: number): Promise<Comment[]> {
+  const response = await fetch(`${API_BASE}/api/analysis/result/${analysisId}/comments`);
+  if (!response.ok) {
+    if (response.status === 404) return [];
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return response.json();
+}
+
 export async function getCommentsByVideo(videoId: string): Promise<Comment[]> {
   const response = await fetch(`${API_BASE}/api/analysis/video/${videoId}/comments`);
   if (!response.ok) {

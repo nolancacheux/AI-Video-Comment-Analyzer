@@ -236,8 +236,9 @@ export function useAnalysis(): UseAnalysisReturn {
           result,
           mlMetrics: {
             ...prev.mlMetrics,
-            processingTimeSeconds: finalElapsed,
-            avgConfidence: 0.85 + Math.random() * 0.08,
+            processingTimeSeconds: result.ml_metadata?.processing_time_seconds || finalElapsed,
+            avgConfidence: result.ml_metadata?.avg_confidence || prev.mlMetrics.avgConfidence,
+            tokensProcessed: result.ml_metadata?.total_tokens || prev.mlMetrics.tokensProcessed,
           },
         }));
       }
