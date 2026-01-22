@@ -35,14 +35,6 @@ def get_str(key: str, default: str = "") -> str:
     return os.getenv(key, default)
 
 
-def get_list(key: str, default: str = "", separator: str = ",") -> list[str]:
-    """Get list from comma-separated env var."""
-    value = os.getenv(key, default)
-    if not value:
-        return []
-    return [item.strip() for item in value.split(separator)]
-
-
 @lru_cache(maxsize=1)
 class Settings:
     """Application settings loaded from environment variables."""
@@ -51,15 +43,6 @@ class Settings:
     OLLAMA_URL: str = get_str("OLLAMA_URL", "http://localhost:11434")
     OLLAMA_MODEL: str = get_str("OLLAMA_MODEL", "llama3.2:3b")
     OLLAMA_ENABLED: bool = get_bool("OLLAMA_ENABLED", True)
-
-    # === Database ===
-    DATABASE_URL: str = get_str("DATABASE_URL", "sqlite:///./ai-video-comment-analyzer.db")
-
-    # === API Server ===
-    API_PORT: int = get_int("API_PORT", 8000)
-    CORS_ORIGINS: list[str] = get_list(
-        "CORS_ORIGINS", "http://localhost:3000,http://localhost:3001"
-    )
 
     # === YouTube Extraction ===
     YOUTUBE_MAX_COMMENTS: int = get_int("YOUTUBE_MAX_COMMENTS", 100)
@@ -77,18 +60,15 @@ class Settings:
     # === ML Processing ===
     SENTIMENT_BATCH_SIZE: int = get_int("SENTIMENT_BATCH_SIZE", 32)
     SENTIMENT_MAX_LENGTH: int = get_int("SENTIMENT_MAX_LENGTH", 512)
-    ML_PROGRESS_UPDATE_FREQUENCY: int = get_int("ML_PROGRESS_UPDATE_FREQUENCY", 10)
 
     # === Topic Modeling ===
     MAX_TOPICS: int = get_int("MAX_TOPICS", 5)
     MAX_TOPICS_ML: int = get_int("MAX_TOPICS_ML", 10)
-    TOPIC_KEYWORDS_COUNT: int = get_int("TOPIC_KEYWORDS_COUNT", 5)
     TOPIC_MIN_COMMENTS: int = get_int("TOPIC_MIN_COMMENTS", 2)
 
     # === Display Limits ===
     HISTORY_LIMIT: int = get_int("HISTORY_LIMIT", 10)
     SEARCH_RESULTS_LIMIT: int = get_int("SEARCH_RESULTS_LIMIT", 5)
-    RESULTS_DISPLAY_LIMIT: int = get_int("RESULTS_DISPLAY_LIMIT", 5)
 
 
 def get_settings() -> Settings:
