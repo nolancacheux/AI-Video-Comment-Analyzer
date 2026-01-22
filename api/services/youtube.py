@@ -76,39 +76,73 @@ class YouTubeExtractor:
     def is_valid_youtube_url(cls, url: str) -> bool:
         return cls.extract_video_id(url) is not None
 
-    def get_video_metadata(self, url: str) -> VideoMetadata:
+    @staticmethod
+    def _run_yt_dlp(args: list[str], timeout: int | float) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            ["yt-dlp", *args],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+
+    @staticmethod
+    def _parse_upload_date(upload_date: str | None) -> datetime | None:
+        if not upload_date:
+            return None
+        try:
+            return datetime.strptime(upload_date, "%Y%m%d")
+        except ValueError:
+            return None
+
+    @staticmethod
+    def _parse_comment_timestamp(timestamp: int | float | None) -> datetime | None:
+        if not timestamp:
+            return None
+        try:
+            return datetime.fromtimestamp(timestamp)
+        except (ValueError, OSError):
+            return None
+
+    @staticmethod
+    def _format_duration(duration_secs: int | float | None) -> str | None:
+        if not duration_secs:
+            return None
+        minutes, seconds = divmod(int(duration_secs), 60)
+        hours, minutes = divmod(minutes, 60)
+        if hours > 0:
+            return f"{hours}:{minutes:02d}:{seconds:02d}"
+        return f"{minutes}:{seconds:02d}"
+
+    def _get_video_id(self, url: str) -> str:
         video_id = self.extract_video_id(url)
         if not video_id:
             raise VideoNotFoundError("Invalid YouTube URL")
+        return video_id
+
+    def get_video_metadata(self, url: str) -> VideoMetadata:
+        video_id = self._get_video_id(url)
 
         logger.info(f"[YouTube] Fetching metadata for video: {video_id}")
         try:
-            result = subprocess.run(
+            result = self._run_yt_dlp(
                 [
-                    "yt-dlp",
                     "--dump-json",
                     "--no-download",
                     "--no-warnings",
                     url,
                 ],
-                capture_output=True,
-                text=True,
                 timeout=settings.YOUTUBE_METADATA_TIMEOUT,
             )
 
             if result.returncode != 0:
-                if "Video unavailable" in result.stderr or "Private video" in result.stderr:
+                stderr = result.stderr
+                if "Video unavailable" in stderr or "Private video" in stderr:
                     raise VideoNotFoundError("Video is unavailable or private")
-                raise YouTubeExtractionError(f"Failed to extract video metadata: {result.stderr}")
+                raise YouTubeExtractionError(f"Failed to extract video metadata: {stderr}")
 
             data = json.loads(result.stdout)
 
-            published_at = None
-            if upload_date := data.get("upload_date"):
-                try:
-                    published_at = datetime.strptime(upload_date, "%Y%m%d")
-                except ValueError:
-                    pass
+            published_at = self._parse_upload_date(data.get("upload_date"))
 
             metadata = VideoMetadata(
                 id=video_id,
@@ -132,15 +166,12 @@ class YouTubeExtractor:
     def get_comments(self, url: str, max_comments: int | None = None) -> list[CommentData]:
         if max_comments is None:
             max_comments = settings.YOUTUBE_MAX_COMMENTS
-        video_id = self.extract_video_id(url)
-        if not video_id:
-            raise VideoNotFoundError("Invalid YouTube URL")
+        video_id = self._get_video_id(url)
 
         logger.info(f"[YouTube] Extracting up to {max_comments} comments for video: {video_id}")
         try:
-            result = subprocess.run(
+            result = self._run_yt_dlp(
                 [
-                    "yt-dlp",
                     "--skip-download",
                     "--write-comments",
                     "--no-warnings",
@@ -149,8 +180,6 @@ class YouTubeExtractor:
                     "--dump-json",
                     url,
                 ],
-                capture_output=True,
-                text=True,
                 timeout=settings.YOUTUBE_COMMENTS_TIMEOUT,
             )
 
@@ -167,12 +196,9 @@ class YouTubeExtractor:
 
             comments = []
             for comment in raw_comments:
-                published_at = None
-                if timestamp := comment.get("timestamp"):
-                    try:
-                        published_at = datetime.fromtimestamp(timestamp)
-                    except (ValueError, OSError):
-                        pass
+                parent_id = comment.get("parent")
+                if parent_id == "root":
+                    parent_id = None
 
                 comments.append(
                     CommentData(
@@ -181,10 +207,8 @@ class YouTubeExtractor:
                         author_profile_image_url=comment.get("author_thumbnail", ""),
                         text=comment.get("text", ""),
                         like_count=comment.get("like_count", 0) or 0,
-                        published_at=published_at,
-                        parent_id=comment.get("parent")
-                        if comment.get("parent") != "root"
-                        else None,
+                        published_at=self._parse_comment_timestamp(comment.get("timestamp")),
+                        parent_id=parent_id,
                     )
                 )
 
@@ -206,17 +230,14 @@ class YouTubeExtractor:
         logger.info(f"[YouTube] Searching for: '{query}' (max {max_results} results)")
         try:
             # Use --flat-playlist for fast search (no full metadata download)
-            result = subprocess.run(
+            result = self._run_yt_dlp(
                 [
-                    "yt-dlp",
                     f"ytsearch{max_results}:{query}",
                     "--dump-json",
                     "--no-download",
                     "--no-warnings",
                     "--flat-playlist",
                 ],
-                capture_output=True,
-                text=True,
                 timeout=settings.YOUTUBE_SEARCH_TIMEOUT,
             )
 
@@ -236,15 +257,7 @@ class YouTubeExtractor:
                         continue
 
                     # Format duration (flat-playlist gives duration in seconds)
-                    duration_secs = data.get("duration")
-                    duration_str = None
-                    if duration_secs:
-                        minutes, seconds = divmod(int(duration_secs), 60)
-                        hours, minutes = divmod(minutes, 60)
-                        if hours > 0:
-                            duration_str = f"{hours}:{minutes:02d}:{seconds:02d}"
-                        else:
-                            duration_str = f"{minutes}:{seconds:02d}"
+                    duration_str = self._format_duration(data.get("duration"))
 
                     results.append(
                         SearchResultData(
