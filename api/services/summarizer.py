@@ -65,10 +65,7 @@ class Summarizer:
             return False
 
         # Check if cached result is still valid
-        if (
-            self._available is not None
-            and self._availability_checked_at is not None
-        ):
+        if self._available is not None and self._availability_checked_at is not None:
             age = time.time() - self._availability_checked_at
             if age < self._availability_ttl:
                 return self._available

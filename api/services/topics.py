@@ -1018,9 +1018,7 @@ def generate_topic_phrase(
                 bigram_counts[bigram] += 1
 
         # Get the most common bigram that appears at least twice
-        common_bigrams = [
-            bigram for bigram, count in bigram_counts.most_common(5) if count >= 2
-        ]
+        common_bigrams = [bigram for bigram, count in bigram_counts.most_common(5) if count >= 2]
         if common_bigrams:
             # Capitalize each word
             return " ".join(word.capitalize() for word in common_bigrams[0].split())
@@ -1234,9 +1232,7 @@ class TopicModeler:
                 logger.info(f"[Topics] Using cached embedding model (loaded {age:.0f}s ago)")
         return self._embedding_model
 
-    def _create_topic_model(
-        self, nr_topics: int | str = "auto", num_docs: int = 100
-    ) -> "BERTopic":
+    def _create_topic_model(self, nr_topics: int | str = "auto", num_docs: int = 100) -> "BERTopic":
         from sklearn.feature_extraction.text import CountVectorizer
 
         # Dynamic min_df: use 1 for small datasets to prevent "max_df" errors
@@ -1340,9 +1336,7 @@ class TopicModeler:
             # Catch "max_df corresponds to" and "empty vocabulary" errors
             err_msg = str(e).lower()
             if "max_df" in err_msg or "empty vocabulary" in err_msg or "after pruning" in err_msg:
-                logger.warning(
-                    f"[Topics] Vectorizer error ({e}), falling back to theme clustering"
-                )
+                logger.warning(f"[Topics] Vectorizer error ({e}), falling back to theme clustering")
             else:
                 logger.warning(f"[Topics] ML clustering failed: {e}, using theme fallback")
             return simple_topic_clustering(texts, engagement_scores, sentiments, max_topics)
