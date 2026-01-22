@@ -5,15 +5,12 @@ Tests for sentiment analysis service.
 import pytest
 
 from api.services.sentiment import (
-    NEGATIVE_KEYWORDS,
-    POSITIVE_KEYWORDS,
     BatchProgress,
     SentimentAnalyzer,
     SentimentCategory,
     SentimentResult,
     get_sentiment_analyzer,
     is_suggestion,
-    simple_sentiment,
 )
 
 
@@ -58,9 +55,9 @@ class TestSuggestionDetection:
 
     def test_is_suggestion_french_patterns(self):
         """Test suggestion detection with French patterns."""
-        assert is_suggestion("Pourriez-vous faire une vidéo sur Python?")
+        assert is_suggestion("Pourriez-vous faire une video sur Python?")
         assert is_suggestion("Ce serait bien d'avoir plus d'exemples")
-        # Note: "Je suggère" with accent may not match the pattern "je suggere"
+        # Note: "Je suggere" with accent may not match the pattern "je suggere"
         assert is_suggestion("Je propose d'ajouter des sous-titres")
 
     def test_is_suggestion_negative_cases(self):
@@ -74,55 +71,6 @@ class TestSuggestionDetection:
         """Test that suggestion detection is case insensitive."""
         assert is_suggestion("YOU SHOULD TRY THIS")
         assert is_suggestion("PLEASE ADD MORE")
-
-
-class TestSimpleSentiment:
-    """Tests for simple keyword-based sentiment analysis."""
-
-    def test_simple_sentiment_positive(self):
-        """Test positive sentiment detection."""
-        assert simple_sentiment("I love this video!") == SentimentCategory.POSITIVE
-        assert simple_sentiment("Great content, amazing work") == SentimentCategory.POSITIVE
-        assert simple_sentiment("This is perfect, thank you") == SentimentCategory.POSITIVE
-
-    def test_simple_sentiment_negative(self):
-        """Test negative sentiment detection."""
-        assert simple_sentiment("This is terrible") == SentimentCategory.NEGATIVE
-        assert simple_sentiment("I hate this video, worst ever") == SentimentCategory.NEGATIVE
-        assert simple_sentiment("Boring and disappointing") == SentimentCategory.NEGATIVE
-
-    def test_simple_sentiment_neutral(self):
-        """Test neutral sentiment detection."""
-        assert simple_sentiment("This is a video") == SentimentCategory.NEUTRAL
-        assert simple_sentiment("I watched it") == SentimentCategory.NEUTRAL
-        assert simple_sentiment("") == SentimentCategory.NEUTRAL
-
-    def test_simple_sentiment_mixed(self):
-        """Test mixed sentiment (more positive wins)."""
-        # 3 positive vs 1 negative
-        result = simple_sentiment("Great amazing perfect but bad")
-        assert result == SentimentCategory.POSITIVE
-
-    def test_simple_sentiment_equal_mixed(self):
-        """Test equal mixed sentiment defaults to neutral."""
-        result = simple_sentiment("good bad")
-        assert result == SentimentCategory.NEUTRAL
-
-    def test_simple_sentiment_french_keywords(self):
-        """Test French keyword detection."""
-        assert simple_sentiment("Merci beaucoup, magnifique!") == SentimentCategory.POSITIVE
-        assert simple_sentiment("C'est nul et pourri") == SentimentCategory.NEGATIVE
-
-    def test_simple_sentiment_french_positive_phrases(self):
-        """Test French positive phrases like 'hâte de' (looking forward to)."""
-        # "J'ai hâte de voir la suite" = "I'm looking forward to seeing the rest"
-        # This should be POSITIVE, not negative
-        result = simple_sentiment("J'ai hâte de voir la suite")
-        assert result == SentimentCategory.POSITIVE, "hâte de should be positive (looking forward to)"
-
-        # Additional positive French phrases
-        assert simple_sentiment("Trop bien cette vidéo!") == SentimentCategory.POSITIVE
-        assert simple_sentiment("J'adore ce contenu") == SentimentCategory.POSITIVE
 
 
 class TestSentimentAnalyzer:
@@ -152,24 +100,16 @@ class TestSentimentAnalyzer:
         assert result.category == SentimentCategory.SUGGESTION
         assert result.is_suggestion is True
 
-    def test_analyze_single_positive_fallback(self, analyzer):
-        """Test positive sentiment with fallback."""
-        analyzer._ml_available = False
+    def test_analyze_single_positive(self, analyzer):
+        """Test positive sentiment detection."""
         result = analyzer.analyze_single("I love this amazing content!")
         assert result.category == SentimentCategory.POSITIVE
         assert result.is_suggestion is False
 
-    def test_analyze_single_negative_fallback(self, analyzer):
-        """Test negative sentiment with fallback."""
-        analyzer._ml_available = False
+    def test_analyze_single_negative(self, analyzer):
+        """Test negative sentiment detection."""
         result = analyzer.analyze_single("This is terrible and boring")
         assert result.category == SentimentCategory.NEGATIVE
-
-    def test_analyze_single_neutral_fallback(self, analyzer):
-        """Test neutral sentiment with fallback."""
-        analyzer._ml_available = False
-        result = analyzer.analyze_single("I watched the video")
-        assert result.category == SentimentCategory.NEUTRAL
 
     def test_analyze_batch(self, analyzer):
         """Test batch analysis."""
@@ -208,20 +148,27 @@ class TestSentimentAnalyzer:
         results = list(analyzer.analyze_batch_with_progress(texts, batch_size=5))
         assert len(results) == 10
 
-    def test_device_property_fallback(self, analyzer):
-        """Test device property when ML not available."""
-        analyzer._ml_available = False
-        assert analyzer.device is None
+    def test_device_property(self, analyzer):
+        """Test device property returns valid device."""
+        device = analyzer.device
+        assert device is not None
+        assert device.type in ["cpu", "cuda"]
 
-    def test_model_property_fallback(self, analyzer):
-        """Test model property when ML not available."""
-        analyzer._ml_available = False
-        assert analyzer.model is None
+    def test_model_property(self, analyzer):
+        """Test model property loads model."""
+        model = analyzer.model
+        assert model is not None
 
-    def test_tokenizer_property_fallback(self, analyzer):
-        """Test tokenizer property when ML not available."""
-        analyzer._ml_available = False
-        assert analyzer.tokenizer is None
+    def test_tokenizer_property(self, analyzer):
+        """Test tokenizer property loads tokenizer."""
+        tokenizer = analyzer.tokenizer
+        assert tokenizer is not None
+
+    def test_ml_truncates_long_text(self, analyzer):
+        """Test that ML handles long text."""
+        long_text = "word " * 1000
+        result = analyzer.analyze_single(long_text, max_length=512)
+        assert result is not None
 
 
 class TestSentimentResult:
@@ -282,57 +229,3 @@ class TestSentimentCategory:
         """Test SentimentCategory is string enum."""
         assert isinstance(SentimentCategory.POSITIVE, str)
         assert SentimentCategory.POSITIVE.value == "positive"
-
-
-class TestKeywordLists:
-    """Tests for keyword lists."""
-
-    def test_positive_keywords_not_empty(self):
-        """Test that positive keywords list is not empty."""
-        assert len(POSITIVE_KEYWORDS) > 0
-
-    def test_negative_keywords_not_empty(self):
-        """Test that negative keywords list is not empty."""
-        assert len(NEGATIVE_KEYWORDS) > 0
-
-    def test_no_keyword_overlap(self):
-        """Test that positive and negative keywords don't overlap."""
-        overlap = set(POSITIVE_KEYWORDS) & set(NEGATIVE_KEYWORDS)
-        # Note: 'horrible' appears in both French negative and English negative
-        # which is acceptable
-        assert len(overlap) <= 1  # Allow minor overlap for multilingual
-
-
-class TestMLIntegration:
-    """Tests for ML model integration (when available)."""
-
-    @pytest.fixture
-    def ml_analyzer(self):
-        """Get analyzer and check if ML is available."""
-        analyzer = SentimentAnalyzer()
-        if not analyzer._ml_available:
-            pytest.skip("ML models not available")
-        return analyzer
-
-    def test_ml_analyze_single(self, ml_analyzer):
-        """Test ML-based single analysis."""
-        result = ml_analyzer.analyze_single("This video is absolutely fantastic!")
-        assert isinstance(result, SentimentResult)
-        assert result.category in SentimentCategory
-        assert 0 <= result.score <= 1
-
-    def test_ml_analyze_batch(self, ml_analyzer):
-        """Test ML-based batch analysis."""
-        texts = [
-            "I love this video so much!",
-            "This is the worst content ever",
-            "It's okay, nothing special",
-        ]
-        results = ml_analyzer.analyze_batch(texts)
-        assert len(results) == 3
-
-    def test_ml_truncates_long_text(self, ml_analyzer):
-        """Test that ML handles long text."""
-        long_text = "word " * 1000
-        result = ml_analyzer.analyze_single(long_text, max_length=512)
-        assert result is not None

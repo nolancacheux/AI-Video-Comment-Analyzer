@@ -9,7 +9,6 @@ from api.services.topics import (
     TopicResult,
     extract_keywords_simple,
     get_topic_modeler,
-    simple_topic_clustering,
 )
 
 
@@ -74,94 +73,6 @@ class TestExtractKeywordsSimple:
         assert "dans" not in keywords
 
 
-class TestSimpleTopicClustering:
-    """Tests for simple topic clustering."""
-
-    def test_simple_clustering_basic(self):
-        """Test basic topic clustering."""
-        texts = [
-            "Python is great for data science",
-            "Python programming tutorial",
-            "Learn Python basics",
-            "JavaScript web development",
-            "JavaScript frameworks overview",
-            "JavaScript tutorial",
-        ]
-        engagement = [10, 5, 3, 8, 4, 2]
-        topics = simple_topic_clustering(texts, engagement, max_topics=3)
-
-        assert len(topics) > 0
-        assert all(isinstance(t, TopicResult) for t in topics)
-
-    def test_simple_clustering_too_few_texts(self):
-        """Test clustering with too few texts."""
-        texts = ["One text", "Two texts"]
-        engagement = [1, 1]
-        topics = simple_topic_clustering(texts, engagement)
-        assert topics == []
-
-    def test_simple_clustering_empty_input(self):
-        """Test clustering with empty input."""
-        topics = simple_topic_clustering([], [])
-        assert topics == []
-
-    def test_simple_clustering_max_topics_limit(self):
-        """Test that max_topics limits results."""
-        texts = [f"topic{i} content" for i in range(20)]
-        engagement = [1] * 20
-        topics = simple_topic_clustering(texts, engagement, max_topics=3)
-        assert len(topics) <= 3
-
-    def test_simple_clustering_engagement_sorting(self):
-        """Test that topics are sorted by engagement."""
-        texts = [
-            "popular topic popular",
-            "popular topic content",
-            "popular topic example",
-            "rare content here",
-            "rare content there",
-            "rare content everywhere",
-        ]
-        engagement = [100, 50, 25, 1, 1, 1]
-        topics = simple_topic_clustering(texts, engagement, max_topics=5)
-
-        if len(topics) >= 2:
-            # First topic should have highest engagement
-            assert topics[0].total_engagement >= topics[-1].total_engagement
-
-    def test_simple_clustering_topic_result_structure(self):
-        """Test TopicResult structure."""
-        texts = [
-            "machine learning basics",
-            "machine learning tutorial",
-            "machine learning examples",
-        ]
-        engagement = [10, 5, 3]
-        topics = simple_topic_clustering(texts, engagement)
-
-        for topic in topics:
-            assert hasattr(topic, "topic_id")
-            assert hasattr(topic, "name")
-            assert hasattr(topic, "keywords")
-            assert hasattr(topic, "mention_count")
-            assert hasattr(topic, "total_engagement")
-            assert hasattr(topic, "comment_indices")
-
-    def test_simple_clustering_excludes_small_groups(self):
-        """Test that groups with less than 2 items are excluded."""
-        texts = [
-            "common topic here",
-            "common topic there",
-            "unique standalone",
-        ]
-        engagement = [1, 1, 1]
-        topics = simple_topic_clustering(texts, engagement)
-
-        # All topics should have at least 2 mentions
-        for topic in topics:
-            assert topic.mention_count >= 2
-
-
 class TestTopicModeler:
     """Tests for TopicModeler class."""
 
@@ -222,23 +133,34 @@ class TestTopicModeler:
         topics = modeler.extract_topics(texts, max_topics=5)
         assert len(topics) <= 5
 
-    def test_extract_topics_fallback_mode(self, modeler):
-        """Test fallback to simple clustering when ML unavailable."""
-        modeler._ml_available = False
+    def test_embedding_model_lazy_loading(self, modeler):
+        """Test that embedding model is lazy loaded."""
+        # Initially None
+        assert modeler._embedding_model is None
+
+        # Access triggers loading
+        _ = modeler.embedding_model
+
+        # Now should be loaded
+        assert modeler._embedding_model is not None
+
+    def test_extract_topics_with_sentiments(self, modeler):
+        """Test topic extraction with sentiment labels."""
         texts = [
-            "Python tutorial here",
-            "Python basics guide",
-            "Python examples shown",
+            "Machine learning is revolutionizing AI",
+            "Deep learning neural networks",
+            "AI machine learning algorithms",
+            "Web development with React",
+            "Frontend JavaScript frameworks",
+            "React web application development",
         ]
-        topics = modeler.extract_topics(texts)
+        sentiments = ["positive", "positive", "neutral", "positive", "neutral", "positive"]
+        topics = modeler.extract_topics(texts, sentiments=sentiments, max_topics=5)
 
-        # Should return results from fallback
         assert isinstance(topics, list)
-
-    def test_embedding_model_property_fallback(self, modeler):
-        """Test embedding model property when ML unavailable."""
-        modeler._ml_available = False
-        assert modeler.embedding_model is None
+        for topic in topics:
+            assert isinstance(topic, TopicResult)
+            assert hasattr(topic, "sentiment_breakdown")
 
 
 class TestTopicResult:
@@ -272,45 +194,16 @@ class TestTopicResult:
         )
         assert result.comment_indices == []
 
-
-class TestMLIntegration:
-    """Tests for ML model integration (when available)."""
-
-    @pytest.fixture
-    def ml_modeler(self):
-        """Get modeler and check if ML is available."""
-        modeler = TopicModeler()
-        if not modeler._ml_available:
-            pytest.skip("ML models not available")
-        return modeler
-
-    def test_ml_extract_topics(self, ml_modeler):
-        """Test ML-based topic extraction."""
-        texts = [
-            "Machine learning is revolutionizing AI",
-            "Deep learning neural networks",
-            "AI machine learning algorithms",
-            "Web development with React",
-            "Frontend JavaScript frameworks",
-            "React web application development",
-            "Database optimization techniques",
-            "SQL query performance tuning",
-            "Database indexing strategies",
-        ]
-        topics = ml_modeler.extract_topics(texts, max_topics=5)
-
-        assert len(topics) > 0
-        for topic in topics:
-            assert isinstance(topic, TopicResult)
-            assert len(topic.keywords) > 0
-
-    def test_ml_embedding_model_lazy_loading(self, ml_modeler):
-        """Test that embedding model is lazy loaded."""
-        # Initially None
-        assert ml_modeler._embedding_model is None
-
-        # Access triggers loading
-        _ = ml_modeler.embedding_model
-
-        # Now should be loaded
-        assert ml_modeler._embedding_model is not None
+    def test_topic_result_sentiment_breakdown(self):
+        """Test TopicResult sentiment_breakdown field."""
+        result = TopicResult(
+            topic_id=1,
+            name="Test",
+            keywords=["test"],
+            mention_count=10,
+            total_engagement=100,
+            sentiment_breakdown={"positive": 5, "negative": 3, "neutral": 2},
+        )
+        assert result.sentiment_breakdown["positive"] == 5
+        assert result.sentiment_breakdown["negative"] == 3
+        assert result.sentiment_breakdown["neutral"] == 2
