@@ -5,17 +5,12 @@ from collections import Counter
 from dataclasses import dataclass, field
 from functools import lru_cache
 
+from bertopic import BERTopic
+from sentence_transformers import SentenceTransformer
+
 from api.config import settings
 
 logger = logging.getLogger(__name__)
-
-try:
-    from bertopic import BERTopic
-    from sentence_transformers import SentenceTransformer
-
-    ML_AVAILABLE = True
-except ImportError:
-    ML_AVAILABLE = False
 
 # Comprehensive English stopwords - must be lowercase
 STOPWORDS = {
@@ -1036,174 +1031,9 @@ def generate_topic_phrase(
     return "General Discussion"
 
 
-def simple_topic_clustering(
-    texts: list[str],
-    engagement_scores: list[int],
-    sentiments: list[str] | None = None,
-    max_topics: int | None = None,
-) -> list[TopicResult]:
-    """
-    Theme-based topic extraction using semantic grouping.
-
-    Groups comments by detected themes (music quality, nostalgia, etc.)
-    and extracts meaningful keywords for each theme.
-    """
-    start_time = time.time()
-    if max_topics is None:
-        max_topics = settings.MAX_TOPICS
-
-    logger.info(f"[Topics] Starting topic extraction for {len(texts)} comments")
-
-    if len(texts) < settings.TOPIC_MIN_COMMENTS:
-        logger.info(
-            f"[Topics] Not enough texts for topic clustering: {len(texts)} "
-            f"(need {settings.TOPIC_MIN_COMMENTS}+)"
-        )
-        return []
-
-    if sentiments is None:
-        sentiments = ["neutral"] * len(texts)
-
-    # Group comments by theme
-    theme_groups: dict[str, list[int]] = {}
-    unthemed_indices: list[int] = []
-
-    for i, text in enumerate(texts):
-        theme = detect_theme(text)
-        if theme:
-            if theme not in theme_groups:
-                theme_groups[theme] = []
-            theme_groups[theme].append(i)
-        else:
-            unthemed_indices.append(i)
-
-    logger.info(
-        f"[Topics] Theme detection: {len(theme_groups)} themes found, "
-        f"{len(unthemed_indices)} comments without clear theme"
-    )
-
-    # Build topic results from theme groups
-    results = []
-    topic_id = 0
-
-    for theme, indices in theme_groups.items():
-        if len(indices) < 2:  # Skip themes with only 1 comment
-            continue
-
-        total_engagement = sum(engagement_scores[i] for i in indices)
-        topic_texts = [texts[i] for i in indices]
-
-        # Extract keywords specific to this topic
-        topic_keywords = extract_keywords_simple(topic_texts, top_n=5)
-        topic_keywords = validate_keywords(topic_keywords)
-
-        # If no valid keywords found, use theme-based default keywords
-        if not topic_keywords:
-            topic_keywords = TOPIC_THEMES.get(theme, [])[:5]
-
-        # Calculate sentiment breakdown for this topic
-        sentiment_counts: dict[str, int] = {}
-        for idx in indices:
-            sent = sentiments[idx] if idx < len(sentiments) else "neutral"
-            sentiment_counts[sent] = sentiment_counts.get(sent, 0) + 1
-
-        topic_name = format_theme_name(theme)
-
-        results.append(
-            TopicResult(
-                topic_id=topic_id,
-                name=topic_name,
-                keywords=topic_keywords[:5],
-                mention_count=len(indices),
-                total_engagement=total_engagement,
-                sentiment_breakdown=sentiment_counts,
-                comment_indices=indices,
-            )
-        )
-        topic_id += 1
-
-        logger.info(
-            f"[Topics] Topic '{topic_name}': {len(indices)} comments, "
-            f"engagement={total_engagement}, keywords={topic_keywords[:3]}"
-        )
-
-    # If we have unthemed comments and not enough topics, try keyword clustering
-    if len(results) < max_topics and len(unthemed_indices) >= 3:
-        logger.info(
-            f"[Topics] Attempting keyword clustering on {len(unthemed_indices)} unthemed comments"
-        )
-        unthemed_texts = [texts[i] for i in unthemed_indices]
-        unthemed_keywords = extract_keywords_simple(unthemed_texts, top_n=10)
-        unthemed_keywords = validate_keywords(unthemed_keywords)
-
-        if unthemed_keywords:
-            # Group by dominant keyword
-            kw_groups: dict[str, list[int]] = {}
-            for i in unthemed_indices:
-                text_lower = texts[i].lower()
-                for kw in unthemed_keywords[:5]:
-                    if kw in text_lower:
-                        if kw not in kw_groups:
-                            kw_groups[kw] = []
-                        kw_groups[kw].append(i)
-                        break
-
-            for keyword, indices in kw_groups.items():
-                if len(indices) < 2:
-                    continue
-
-                total_engagement = sum(engagement_scores[i] for i in indices)
-                topic_texts = [texts[i] for i in indices]
-                sub_keywords = extract_keywords_simple(topic_texts, top_n=5)
-                sub_keywords = validate_keywords(sub_keywords)
-
-                if not sub_keywords:
-                    sub_keywords = [keyword]
-
-                sentiment_counts = {}
-                for idx in indices:
-                    sent = sentiments[idx] if idx < len(sentiments) else "neutral"
-                    sentiment_counts[sent] = sentiment_counts.get(sent, 0) + 1
-
-                results.append(
-                    TopicResult(
-                        topic_id=topic_id,
-                        name=keyword.capitalize(),
-                        keywords=sub_keywords[:5],
-                        mention_count=len(indices),
-                        total_engagement=total_engagement,
-                        sentiment_breakdown=sentiment_counts,
-                        comment_indices=indices,
-                    )
-                )
-                topic_id += 1
-
-    # Sort by engagement (most engaged first)
-    results.sort(key=lambda x: x.total_engagement, reverse=True)
-
-    elapsed = time.time() - start_time
-    logger.info(
-        f"[Topics] Extracted {len(results[:max_topics])} topics from "
-        f"{len(texts)} comments in {elapsed:.2f}s"
-    )
-
-    if results:
-        avg_comments = sum(r.mention_count for r in results[:max_topics]) / len(
-            results[:max_topics]
-        )
-        logger.info(
-            f"[Topics] Average {avg_comments:.1f} comments per topic, "
-            f"top topic: '{results[0].name}' ({results[0].mention_count} comments)"
-        )
-
-    return results[:max_topics]
-
-
 class TopicModeler:
     """
-    Topic modeling using sentence embeddings and clustering.
-
-    Uses BERTopic when available, falls back to theme-based clustering.
+    Topic modeling using BERTopic with sentence embeddings.
     """
 
     _instance: "TopicModeler | None" = None
@@ -1213,13 +1043,10 @@ class TopicModeler:
         self._embedding_model_name = embedding_model or settings.EMBEDDING_MODEL
         self._embedding_model = None
         self._topic_model = None
-        self._ml_available = ML_AVAILABLE
-        logger.info(f"[Topics] TopicModeler initialized, ML available: {self._ml_available}")
+        logger.info("[Topics] TopicModeler initialized")
 
     @property
     def embedding_model(self):
-        if not self._ml_available:
-            return None
         if self._embedding_model is None:
             logger.info(f"[Topics] Loading embedding model: {self._embedding_model_name}")
             start = time.time()
@@ -1262,7 +1089,7 @@ class TopicModeler:
         max_topics: int | None = None,
     ) -> list[TopicResult]:
         """
-        Extract topics from texts using ML or fallback to theme-based clustering.
+        Extract topics from texts using BERTopic.
 
         Args:
             texts: List of comment texts
@@ -1282,7 +1109,7 @@ class TopicModeler:
             max_topics = settings.MAX_TOPICS_ML
 
         logger.info(
-            f"[Topics] Starting ML topic extraction for {len(texts)} comments "
+            f"[Topics] Starting topic extraction for {len(texts)} comments "
             f"(min_size={min_topic_size}, max_topics={max_topics})"
         )
 
@@ -1296,15 +1123,6 @@ class TopicModeler:
         if sentiments is None:
             sentiments = ["neutral"] * len(texts)
 
-        # Use theme-based clustering as primary method (more reliable)
-        # ML clustering can produce noisy results with small datasets
-        if not self._ml_available or len(texts) < 20:
-            logger.info(
-                f"[Topics] Using theme-based clustering "
-                f"(ML={self._ml_available}, texts={len(texts)})"
-            )
-            return simple_topic_clustering(texts, engagement_scores, sentiments, max_topics)
-
         # Pre-clustering vocabulary validation: count unique non-stopword tokens
         unique_tokens = set()
         for text in texts:
@@ -1314,9 +1132,9 @@ class TopicModeler:
         if len(unique_tokens) < 10:
             logger.info(
                 f"[Topics] Insufficient vocabulary: {len(unique_tokens)} unique words, "
-                "need at least 10. Using theme fallback."
+                "need at least 10."
             )
-            return simple_topic_clustering(texts, engagement_scores, sentiments, max_topics)
+            return []
 
         nr_topics = min(max_topics, max(2, len(texts) // min_topic_size))
         logger.info(f"[Topics] Target topics: {nr_topics}, vocabulary size: {len(unique_tokens)}")
@@ -1333,16 +1151,11 @@ class TopicModeler:
             logger.info(f"[Topics] Found {len(topic_info)} clusters (excluding noise)")
 
         except ValueError as e:
-            # Catch "max_df corresponds to" and "empty vocabulary" errors
-            err_msg = str(e).lower()
-            if "max_df" in err_msg or "empty vocabulary" in err_msg or "after pruning" in err_msg:
-                logger.warning(f"[Topics] Vectorizer error ({e}), falling back to theme clustering")
-            else:
-                logger.warning(f"[Topics] ML clustering failed: {e}, using theme fallback")
-            return simple_topic_clustering(texts, engagement_scores, sentiments, max_topics)
+            logger.warning(f"[Topics] Vectorizer error: {e}")
+            return []
         except Exception as e:
-            logger.warning(f"[Topics] ML clustering failed: {e}, using theme fallback")
-            return simple_topic_clustering(texts, engagement_scores, sentiments, max_topics)
+            logger.warning(f"[Topics] Topic extraction failed: {e}")
+            return []
 
         results = []
         for _, row in topic_info.iterrows():
