@@ -95,17 +95,17 @@ export function OverviewContent({ analysis, comments }: OverviewContentProps) {
     netTone > 0 ? "text-[#2D7A5E]" : netTone < 0 ? "text-[#C44536]" : "text-[#6B7280]";
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 h-full">
       {/* Top Row: Narrative Summary + Evidence Strip */}
-      <div className="grid grid-cols-3 gap-6 reveal stagger-1">
+      <div className="grid grid-cols-3 gap-4 reveal stagger-1">
         {/* Narrative Summary */}
-        <div className="col-span-2 rounded-xl border border-[#E8E4DC] bg-white p-6">
-          <h2 className="text-xl font-display font-semibold text-[#1E3A5F] mb-4">
+        <div className="col-span-2 rounded-xl border border-[#E8E4DC] bg-white p-4">
+          <h2 className="text-lg font-display font-semibold text-[#1E3A5F] mb-2">
             At a Glance
           </h2>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* Main insight */}
-            <p className="text-lg text-[#1E3A5F] leading-relaxed">
+            <p className="text-sm text-[#1E3A5F] leading-relaxed">
               {dominantSentiment === "positive" && (
                 <>
                   Audience reception is <span className="font-semibold text-[#2D7A5E]">mostly positive</span> ({positivePercent}%)
@@ -127,33 +127,33 @@ export function OverviewContent({ analysis, comments }: OverviewContentProps) {
             </p>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-4 gap-4 pt-4 border-t border-[#E8E4DC]">
+            <div className="grid grid-cols-4 gap-3 pt-3 border-t border-[#E8E4DC]">
               <div>
-                <p className="text-xs text-[#6B7280] uppercase tracking-wider mb-1">Breakdown</p>
-                <p className="text-sm text-[#1E3A5F]">
-                  <span className="text-[#2D7A5E]">{positivePercent}% positive</span>,{" "}
-                  <span className="text-[#C44536]">{negativePercent}% negative</span>
+                <p className="text-[10px] text-[#6B7280] uppercase tracking-wider mb-0.5">Breakdown</p>
+                <p className="text-xs text-[#1E3A5F]">
+                  <span className="text-[#2D7A5E]">{positivePercent}%+</span>{" "}
+                  <span className="text-[#C44536]">{negativePercent}%-</span>
                 </p>
               </div>
               <div>
-                <p className="text-xs text-[#6B7280] uppercase tracking-wider mb-1">Net Tone</p>
-                <div className="flex items-center gap-1.5">
-                  <ToneIcon className={`h-4 w-4 ${toneColor}`} />
-                  <span className={`text-sm font-medium ${toneColor}`}>{toneLabel}</span>
+                <p className="text-[10px] text-[#6B7280] uppercase tracking-wider mb-0.5">Net Tone</p>
+                <div className="flex items-center gap-1">
+                  <ToneIcon className={`h-3.5 w-3.5 ${toneColor}`} />
+                  <span className={`text-xs font-medium ${toneColor}`}>{toneLabel}</span>
                 </div>
               </div>
               <div>
-                <p className="text-xs text-[#6B7280] uppercase tracking-wider mb-1">Top Topic</p>
-                <p className="text-sm text-[#1E3A5F] truncate">
+                <p className="text-[10px] text-[#6B7280] uppercase tracking-wider mb-0.5">Top Topic</p>
+                <p className="text-xs text-[#1E3A5F] truncate">
                   {topTopic ? `"${topTopic.phrase || topTopic.name}"` : "None"}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-[#6B7280] uppercase tracking-wider mb-1">Suggestions</p>
-                <p className="text-sm text-[#4A7C9B]">
+                <p className="text-[10px] text-[#6B7280] uppercase tracking-wider mb-0.5">Suggestions</p>
+                <p className="text-xs text-[#4A7C9B]">
                   {sentiment.suggestion_count > 0
                     ? `${sentiment.suggestion_count} actionable`
-                    : "None detected"}
+                    : "None"}
                 </p>
               </div>
             </div>
@@ -161,17 +161,17 @@ export function OverviewContent({ analysis, comments }: OverviewContentProps) {
         </div>
 
         {/* Evidence Strip */}
-        <div className="rounded-xl border border-[#E8E4DC] bg-white p-4">
+        <div className="rounded-xl border border-[#E8E4DC] bg-white p-3">
           <EvidenceStrip comments={topEvidence} />
         </div>
       </div>
 
       {/* Structured Summary Cards */}
-      <div className="reveal stagger-2">
-        <h2 className="text-lg font-display font-semibold text-[#1E3A5F] mb-4">
+      <div className="reveal stagger-2 flex-1">
+        <h2 className="text-sm font-display font-semibold text-[#1E3A5F] mb-2">
           Sentiment Breakdown
         </h2>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-3">
           <SummaryCard
             sentiment="positive"
             summary={summaries?.positive}
@@ -197,23 +197,23 @@ export function OverviewContent({ analysis, comments }: OverviewContentProps) {
       </div>
 
       {/* Quick Navigation */}
-      <div className="flex items-center justify-center gap-4 reveal stagger-3">
-        <Button variant="outline" asChild className="gap-2">
+      <div className="flex items-center justify-center gap-3 reveal stagger-3">
+        <Button variant="outline" size="sm" asChild className="gap-1.5 text-xs">
           <Link href={`/analysis/${analysis.id}/topics`}>
-            View Topics
-            <ArrowRight className="h-4 w-4" />
+            Topics
+            <ArrowRight className="h-3 w-3" />
           </Link>
         </Button>
-        <Button variant="outline" asChild className="gap-2">
+        <Button variant="outline" size="sm" asChild className="gap-1.5 text-xs">
           <Link href={`/analysis/${analysis.id}/comments`}>
-            Explore Comments
-            <ArrowRight className="h-4 w-4" />
+            Comments
+            <ArrowRight className="h-3 w-3" />
           </Link>
         </Button>
-        <Button variant="outline" asChild className="gap-2">
+        <Button variant="outline" size="sm" asChild className="gap-1.5 text-xs">
           <Link href={`/analysis/${analysis.id}/charts`}>
-            View Charts
-            <ArrowRight className="h-4 w-4" />
+            Charts
+            <ArrowRight className="h-3 w-3" />
           </Link>
         </Button>
       </div>

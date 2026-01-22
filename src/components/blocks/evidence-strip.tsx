@@ -30,31 +30,31 @@ export function EvidenceStrip({ comments, className }: EvidenceStripProps) {
     }
   };
 
-  const truncateText = (text: string, maxLength: number = 80) => {
+  const truncateText = (text: string, maxLength: number = 60) => {
     if (text.length <= maxLength) return text;
     return text.slice(0, maxLength).trim() + "...";
   };
 
   return (
-    <div className={cn("space-y-3", className)}>
-      <div className="flex items-center gap-2 text-xs font-semibold text-[#6B7280] uppercase tracking-wider">
-        <Quote className="h-3.5 w-3.5" />
+    <div className={cn("space-y-2", className)}>
+      <div className="flex items-center gap-1.5 text-[10px] font-semibold text-[#6B7280] uppercase tracking-wider">
+        <Quote className="h-3 w-3" />
         <span>Top Evidence</span>
       </div>
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         {topComments.map((comment) => (
           <div
             key={comment.id}
             className={cn(
-              "p-3 rounded-lg border-l-4 transition-colors hover:brightness-95",
+              "p-2 rounded-md border-l-3 transition-colors hover:brightness-95",
               getSentimentStyle(comment.sentiment)
             )}
           >
-            <p className="text-sm text-[#1E3A5F] leading-relaxed">
+            <p className="text-[11px] text-[#1E3A5F] leading-snug">
               "{truncateText(comment.text)}"
             </p>
-            <div className="mt-2 flex items-center gap-2 text-xs text-[#6B7280]">
-              <ThumbsUp className="h-3 w-3" />
+            <div className="mt-1 flex items-center gap-1.5 text-[10px] text-[#6B7280]">
+              <ThumbsUp className="h-2.5 w-2.5" />
               <span className="font-medium">{comment.like_count.toLocaleString()}</span>
             </div>
           </div>

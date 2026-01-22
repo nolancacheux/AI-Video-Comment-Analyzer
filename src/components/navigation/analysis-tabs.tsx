@@ -46,7 +46,7 @@ export function AnalysisTabs({ analysisId, className }: AnalysisTabsProps) {
   };
 
   return (
-    <div className={cn("border-b border-[#E8E4DC] bg-white", className)}>
+    <div className={cn("border-b border-[#E8E4DC] bg-white flex-shrink-0", className)}>
       <nav className="flex gap-0 px-4" aria-label="Analysis tabs">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -57,7 +57,7 @@ export function AnalysisTabs({ analysisId, className }: AnalysisTabsProps) {
               key={tab.name}
               href={tab.href(analysisId)}
               className={cn(
-                "flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors",
+                "flex items-center gap-2 px-3 py-2 text-sm font-medium border-b-2 transition-colors",
                 active
                   ? "border-[#D4714E] text-[#1E3A5F]"
                   : "border-transparent text-[#6B7280] hover:text-[#1E3A5F] hover:border-[#E8E4DC]"

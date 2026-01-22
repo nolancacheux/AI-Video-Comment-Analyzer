@@ -28,20 +28,20 @@ function AnalysisLayoutContent({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#FAF8F5]">
+      <div className="h-screen flex flex-col overflow-hidden bg-[#FAF8F5]">
         <GlobalNav />
-        <div className="border-b border-[#E8E4DC] bg-white">
-          <div className="px-6 py-4">
-            <Skeleton className="h-16 w-full" />
+        <div className="border-b border-[#E8E4DC] bg-white flex-shrink-0">
+          <div className="px-4 py-2">
+            <Skeleton className="h-10 w-full" />
           </div>
         </div>
-        <div className="border-b border-[#E8E4DC] bg-white">
-          <div className="px-6">
-            <Skeleton className="h-12 w-96" />
+        <div className="border-b border-[#E8E4DC] bg-white flex-shrink-0">
+          <div className="px-4">
+            <Skeleton className="h-10 w-80" />
           </div>
         </div>
-        <main className="p-6">
-          <Skeleton className="h-[600px] w-full" />
+        <main className="flex-1 overflow-auto p-4">
+          <Skeleton className="h-full w-full" />
         </main>
       </div>
     );
@@ -52,12 +52,12 @@ function AnalysisLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5]">
+    <div className="h-screen flex flex-col overflow-hidden bg-[#FAF8F5]">
       <GlobalNav />
 
       {/* Video Header */}
-      <div className="border-b border-[#E8E4DC] bg-white">
-        <div className="px-6 py-4">
+      <div className="border-b border-[#E8E4DC] bg-white flex-shrink-0">
+        <div className="px-4 py-2">
           <VideoHeader
             video={analysis.video}
             totalComments={analysis.total_comments}
@@ -70,7 +70,7 @@ function AnalysisLayoutContent({ children }: { children: React.ReactNode }) {
       <AnalysisTabs analysisId={analysisId} />
 
       {/* Page Content */}
-      <main className="p-6">{children}</main>
+      <main className="flex-1 overflow-auto p-4">{children}</main>
     </div>
   );
 }

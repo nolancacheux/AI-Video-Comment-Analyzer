@@ -69,70 +69,68 @@ export function SummaryCard({
   return (
     <div
       className={cn(
-        "rounded-xl border border-[#E8E4DC] bg-white overflow-hidden card-hover",
+        "rounded-lg border border-[#E8E4DC] bg-white overflow-hidden card-hover",
         className
       )}
     >
       {/* Header */}
-      <div className={cn("px-4 py-3 flex items-center gap-3", config.headerBg)}>
-        <Icon className="h-5 w-5 text-white" />
-        <h3 className="font-semibold text-white">{config.label}</h3>
-        <span className="ml-auto text-sm text-white/80 font-mono">
-          {commentCount} comments
+      <div className={cn("px-3 py-2 flex items-center gap-2", config.headerBg)}>
+        <Icon className="h-4 w-4 text-white" />
+        <h3 className="text-sm font-semibold text-white">{config.label}</h3>
+        <span className="ml-auto text-xs text-white/80 font-mono">
+          {commentCount}
         </span>
       </div>
 
       {/* Content */}
-      <div className="p-4 space-y-4">
+      <div className="p-3 space-y-2.5">
         {/* Top Themes */}
         <div>
-          <h4 className="text-xs font-semibold text-[#6B7280] uppercase tracking-wider mb-2">
+          <h4 className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wider mb-1">
             Top Themes
           </h4>
           {sentimentTopics.length > 0 ? (
-            <ul className="space-y-1">
-              {sentimentTopics.map((topic) => (
+            <ul className="space-y-0.5">
+              {sentimentTopics.slice(0, 3).map((topic) => (
                 <li
                   key={topic.id}
-                  className="text-sm text-[#1E3A5F] flex items-center gap-2"
+                  className="text-xs text-[#1E3A5F] flex items-center gap-1.5"
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-current opacity-40" />
+                  <span className="w-1 h-1 rounded-full bg-current opacity-40" />
                   <span className="truncate">{topic.phrase || topic.name}</span>
-                  <span className="text-xs text-[#6B7280] ml-auto">
+                  <span className="text-[10px] text-[#6B7280] ml-auto">
                     {topic.mention_count}
                   </span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-[#6B7280] italic">No topics detected</p>
+            <p className="text-xs text-[#6B7280] italic">No topics</p>
           )}
         </div>
 
         {/* Evidence */}
         <div>
-          <h4 className="text-xs font-semibold text-[#6B7280] uppercase tracking-wider mb-2">
+          <h4 className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wider mb-0.5">
             Evidence
           </h4>
-          <p className="text-sm text-[#1E3A5F]">
-            {commentCount} comments, {totalLikes.toLocaleString()} total likes
+          <p className="text-xs text-[#1E3A5F]">
+            {commentCount} comments, {totalLikes.toLocaleString()} likes
           </p>
         </div>
 
         {/* Summary / Action */}
         <div>
-          <h4 className="text-xs font-semibold text-[#6B7280] uppercase tracking-wider mb-2">
+          <h4 className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wider mb-0.5">
             Summary
           </h4>
           {hasEnoughData && summary?.summary ? (
-            <p className="text-sm text-[#1E3A5F] leading-relaxed">
+            <p className="text-xs text-[#1E3A5F] leading-relaxed line-clamp-3">
               {summary.summary}
             </p>
           ) : (
-            <p className="text-sm text-[#6B7280] italic">
-              {hasEnoughData
-                ? "AI summary unavailable"
-                : "Not enough data for a reliable summary (need 5+ comments)"}
+            <p className="text-xs text-[#6B7280] italic">
+              {hasEnoughData ? "AI summary unavailable" : "Need 5+ comments"}
             </p>
           )}
         </div>

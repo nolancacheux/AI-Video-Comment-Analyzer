@@ -16,7 +16,7 @@ export function GlobalNav({ className }: GlobalNavProps) {
   return (
     <nav
       className={cn(
-        "h-14 border-b border-[#E8E4DC] bg-white px-4 flex items-center justify-between",
+        "h-12 border-b border-[#E8E4DC] bg-white px-4 flex items-center justify-between flex-shrink-0",
         className
       )}
     >
