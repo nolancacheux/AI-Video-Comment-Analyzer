@@ -1,3 +1,10 @@
+"""
+Topic modeling using BERTopic with sentence embeddings.
+
+Extracts meaningful topics from comment text using clustering
+and provides semantic theme detection.
+"""
+
 import logging
 import re
 import time
@@ -9,888 +16,18 @@ from bertopic import BERTopic
 from sentence_transformers import SentenceTransformer
 
 from api.config import settings
+from api.data import STOPWORDS, THEME_DISPLAY_NAMES, TOPIC_THEMES
 
 logger = logging.getLogger(__name__)
 
-# Comprehensive English stopwords - must be lowercase
-STOPWORDS = {
-    # Articles and determiners
-    "the",
-    "a",
-    "an",
-    "this",
-    "that",
-    "these",
-    "those",
-    "some",
-    "any",
-    "no",
-    "every",
-    "each",
-    "all",
-    "both",
-    "either",
-    "neither",
-    "few",
-    "many",
-    "much",
-    "more",
-    "most",
-    "other",
-    "another",
-    "such",
-    "what",
-    "which",
-    "whose",
-    # Pronouns
-    "i",
-    "me",
-    "my",
-    "myself",
-    "mine",
-    "we",
-    "us",
-    "our",
-    "ours",
-    "ourselves",
-    "you",
-    "your",
-    "yours",
-    "yourself",
-    "yourselves",
-    "he",
-    "him",
-    "his",
-    "himself",
-    "she",
-    "her",
-    "hers",
-    "herself",
-    "it",
-    "its",
-    "itself",
-    "they",
-    "them",
-    "their",
-    "theirs",
-    "themselves",
-    "who",
-    "whom",  # Verbs (common)
-    "is",
-    "are",
-    "was",
-    "were",
-    "be",
-    "been",
-    "being",
-    "am",
-    "have",
-    "has",
-    "had",
-    "having",
-    "do",
-    "does",
-    "did",
-    "doing",
-    "done",
-    "will",
-    "would",
-    "could",
-    "should",
-    "may",
-    "might",
-    "must",
-    "shall",
-    "can",
-    "need",
-    "dare",
-    "get",
-    "got",
-    "gets",
-    "getting",
-    "make",
-    "makes",
-    "made",
-    "making",
-    "go",
-    "goes",
-    "went",
-    "gone",
-    "going",
-    "come",
-    "comes",
-    "came",
-    "coming",
-    "take",
-    "takes",
-    "took",
-    "taking",
-    "taken",
-    "give",
-    "gives",
-    "gave",
-    "giving",
-    "given",
-    "see",
-    "sees",
-    "saw",
-    "seeing",
-    "seen",
-    "know",
-    "knows",
-    "knew",
-    "knowing",
-    "known",
-    "think",
-    "thinks",
-    "thought",
-    "thinking",
-    "want",
-    "wants",
-    "wanted",
-    "wanting",
-    "use",
-    "uses",
-    "used",
-    "using",
-    "find",
-    "finds",
-    "found",
-    "finding",
-    "put",
-    "puts",
-    "putting",
-    "say",
-    "says",
-    "said",
-    "saying",
-    "let",
-    "lets",
-    "letting",
-    "keep",
-    "keeps",
-    "kept",
-    "keeping",
-    "begin",
-    "begins",
-    "began",
-    "beginning",
-    "seem",
-    "seems",
-    "seemed",
-    "seeming",
-    "leave",
-    "leaves",
-    "left",
-    "leaving",
-    "call",
-    "calls",
-    "called",
-    "calling",
-    "try",
-    "tries",
-    "tried",
-    "trying",
-    "ask",
-    "asks",
-    "asked",
-    "asking",
-    "feel",
-    "feels",
-    "felt",
-    "feeling",
-    "become",
-    "becomes",
-    "became",
-    "becoming",
-    "show",
-    "shows",
-    "showed",
-    "showing",
-    "shown",
-    # Prepositions
-    "to",
-    "of",
-    "in",
-    "for",
-    "on",
-    "with",
-    "at",
-    "by",
-    "from",
-    "as",
-    "into",
-    "through",
-    "during",
-    "before",
-    "after",
-    "above",
-    "below",
-    "between",
-    "under",
-    "over",
-    "out",
-    "up",
-    "down",
-    "off",
-    "about",
-    "against",
-    "around",
-    "without",
-    "within",
-    "along",
-    "across",
-    "behind",
-    "beyond",
-    "among",
-    # Conjunctions
-    "and",
-    "but",
-    "or",
-    "nor",
-    "so",
-    "yet",
-    "because",
-    "although",
-    "though",
-    "while",
-    "if",
-    "unless",
-    "until",
-    "when",
-    "where",
-    "whether",
-    "since",
-    "once",
-    "than",  # Adverbs
-    "very",
-    "really",
-    "just",
-    "also",
-    "even",
-    "only",
-    "now",
-    "then",
-    "here",
-    "there",
-    "still",
-    "already",
-    "always",
-    "never",
-    "often",
-    "sometimes",
-    "usually",
-    "again",
-    "further",
-    "too",
-    "almost",
-    "enough",
-    "quite",
-    "rather",
-    "well",
-    "back",
-    "away",
-    "ever",
-    "soon",
-    "maybe",
-    "perhaps",
-    "probably",
-    "actually",
-    "basically",
-    "definitely",
-    "especially",
-    "exactly",
-    "generally",
-    "however",
-    "indeed",
-    "instead",
-    "likely",
-    "mainly",
-    "merely",
-    "nearly",
-    "obviously",
-    "particularly",
-    "possibly",
-    "simply",
-    "therefore",
-    "thus",
-    # Common YouTube comment words (noise)
-    "video",
-    "videos",
-    "comment",
-    "comments",
-    "channel",
-    "channels",
-    "watch",
-    "watching",
-    "watched",
-    "subscribe",
-    "subscribed",
-    "like",
-    "liked",
-    "likes",
-    "dislike",
-    "view",
-    "views",
-    "youtube",
-    "click",
-    "link",
-    "share",
-    "upload",
-    "uploaded",
-    "post",
-    "posted",
-    "lol",
-    "lmao",
-    "omg",
-    "wow",
-    "haha",
-    "yeah",
-    "yes",
-    "yep",
-    "yup",
-    "nope",
-    "okay",
-    "ok",
-    "thanks",
-    "thank",
-    "please",
-    "pls",
-    "plz",
-    "gonna",
-    "gotta",
-    "wanna",
-    "kinda",
-    "sorta",
-    "etc",
-    "etc.",
-    "btw",
-    "tbh",
-    "imo",
-    "imho",
-    "idk",
-    "cant",
-    "dont",
-    "doesnt",
-    "didnt",
-    "wont",
-    "wouldnt",
-    "shouldnt",
-    "couldnt",
-    "aint",
-    "isnt",
-    "arent",
-    "wasnt",
-    "werent",
-    "hasnt",
-    "havent",
-    "hadnt",
-    # Common filler words
-    "thing",
-    "things",
-    "stuff",
-    "something",
-    "anything",
-    "nothing",
-    "everything",
-    "someone",
-    "anyone",
-    "everyone",
-    "nobody",
-    "somebody",
-    "anybody",
-    "everybody",
-    "way",
-    "ways",
-    "time",
-    "times",
-    "day",
-    "days",
-    "year",
-    "years",
-    "lot",
-    "lots",
-    "people",
-    "person",
-    "man",
-    "men",
-    "woman",
-    "women",
-    "guy",
-    "guys",
-    "one",
-    "ones",
-    "first",
-    "last",
-    "next",
-    "new",
-    "old",
-    "good",
-    "bad",
-    "great",
-    "best",
-    "better",
-    "worst",
-    "big",
-    "small",
-    "long",
-    "short",
-    "high",
-    "low",
-    "right",
-    "wrong",
-    "part",
-    "parts",
-    "whole",
-    "half",
-    # Numbers as words
-    "zero",
-    "two",
-    "three",
-    "four",
-    "five",
-    "six",
-    "seven",
-    "eight",
-    "nine",
-    "ten",
-    "hundred",
-    "thousand",
-    "million",
-    "billion",
-    # French stopwords (common in multilingual comments)
-    "le",
-    "la",
-    "les",
-    "un",
-    "une",
-    "des",
-    "du",
-    "de",
-    "et",
-    "est",
-    "sont",
-    "que",
-    "qui",
-    "dans",
-    "pour",
-    "sur",
-    "avec",
-    "ce",
-    "cette",
-    "ces",
-    "je",
-    "tu",
-    "il",
-    "elle",
-    "nous",
-    "vous",
-    "ils",
-    "elles",
-    "pas",
-    "plus",
-    "moins",
-    "bien",
-    "tres",
-    "tout",
-    "toute",
-    "tous",
-    "toutes",
-    "rien",
-    "personne",
-    "chaque",
-    "autre",
-    "autres",
-    "meme",
-    "aussi",
-    "encore",
-    "deja",
-    "jamais",
-    "toujours",
-    "souvent",
-    "parfois",
-    "peu",
-    "beaucoup",
-    "trop",
-    "assez",
-    # Extended French stopwords
-    "tellement",
-    "vraiment",
-    "etait",
-    "serait",
-    "peut",
-    "quand",
-    "etre",
-    "avoir",
-    "faire",
-    "dit",
-    "dire",
-    "fait",
-    "fais",
-    "vais",
-    "voir",
-    "veut",
-    "veux",
-    "cest",
-    "cela",
-    "comme",
-    "donc",
-    "mais",
-    "alors",
-    "ici",
-    "voila",
-    "voici",
-    "car",
-    "parce",
-    "quoi",
-    "apres",
-    "avant",
-    "entre",
-    "chez",
-    "vers",
-    "depuis",
-    "jusque",
-    "selon",
-    "pendant",
-    "contre",
-    "quel",
-    "quelle",
-    "quels",
-    "quelles",
-    "moi",
-    "toi",
-    "lui",
-    "leur",
-    "leurs",
-    "mon",
-    "ton",
-    "son",
-    "notre",
-    "votre",
-    "mes",
-    "tes",
-    "ses",
-    "nos",
-    "vos",
-    "ceux",
-    "celle",
-    "celles",
-    # Spanish stopwords
-    "el",
-    "los",
-    "las",
-    "una",
-    "unos",
-    "unas",
-    "es",
-    "era",
-    "eran",
-    "fue",
-    "fueron",
-    "quien",
-    "cual",
-    "como",
-    "cuando",
-    "donde",
-    "por",
-    "para",
-    "con",
-    "sin",
-    "sobre",
-    "hacia",
-    "desde",
-    "hasta",
-    "muy",
-    "mas",
-    "menos",
-    "mal",
-    "ya",
-    "aun",
-    "todavia",
-    "siempre",
-    "nunca",
-    "tambien",
-    "solo",
-    "mismo",
-    "otro",
-    "otra",
-    "otros",
-    "otras",
-    "este",
-    "esta",
-    "estos",
-    "estas",
-    "ese",
-    "esa",
-    "esos",
-    "esas",
-    "yo",
-    "ella",
-    "nosotros",
-    "vosotros",
-    "ellos",
-    "ellas",
-    # Extended Spanish stopwords
-    "estar",
-    "tener",
-    "hacer",
-    "poder",
-    "algo",
-    "aqui",
-    "alli",
-    "alla",
-    "porque",
-    "pero",
-    "aunque",
-    "sino",
-    "pues",
-    "entonces",
-    "luego",
-    "ahora",
-    "antes",
-    "despues",
-    "mientras",
-    "cada",
-    "tanto",
-    "cuanto",
-    "cuales",
-    "quienes",
-    "cuyo",
-    "cuya",
-    "cuyos",
-    "cuyas",
-    "nada",
-    "nadie",
-    "alguno",
-    "alguna",
-    "algunos",
-    "algunas",
-    "ninguno",
-    "ninguna",
-    "ningunos",
-    "ningunas",
-    "todo",
-    "toda",
-    "todos",
-    "todas",
-    "poco",
-    "poca",
-    "pocos",
-    "pocas",
-    "mucho",
-    "mucha",
-    "muchos",
-    "muchas",
-    "demasiado",
-    "bastante",
-    "tan",
-    "asi",
-    "bueno",
-    "buena",
-    "malo",
-    "mala",
-    "mejor",
-    "peor",
-    "primer",
-    "primero",
-    "primera",
-    "segundo",
-    "segunda",
-    "ultimo",
-    "ultima",
-    "unico",
-    "unica",
-}
-
-# Semantic topic themes for grouping - maps theme to keywords that indicate it
-TOPIC_THEMES = {
-    "music_quality": [
-        "music",
-        "sound",
-        "audio",
-        "beat",
-        "melody",
-        "rhythm",
-        "tune",
-        "bass",
-        "drums",
-        "guitar",
-        "piano",
-        "vocal",
-        "vocals",
-        "singing",
-        "instrumental",
-        "mix",
-        "mixing",
-        "mastering",
-        "production",
-    ],
-    "nostalgia": [
-        "nostalgia",
-        "nostalgic",
-        "memories",
-        "memory",
-        "remember",
-        "childhood",
-        "grew",
-        "growing",
-        "80s",
-        "90s",
-        "00s",
-        "years",
-        "ago",
-        "back",
-        "classic",
-        "timeless",
-        "era",
-        "generation",
-        "old",
-    ],
-    "emotional_impact": [
-        "love",
-        "loving",
-        "beautiful",
-        "amazing",
-        "incredible",
-        "touching",
-        "emotional",
-        "emotions",
-        "feelings",
-        "feel",
-        "heart",
-        "soul",
-        "cry",
-        "crying",
-        "tears",
-        "moved",
-        "moving",
-        "goosebumps",
-        "chills",
-        "perfect",
-        "masterpiece",
-    ],
-    "lyrics": [
-        "lyrics",
-        "lyric",
-        "words",
-        "meaning",
-        "message",
-        "poetry",
-        "poetic",
-        "verse",
-        "chorus",
-        "hook",
-        "written",
-        "writing",
-        "storytelling",
-    ],
-    "performance": [
-        "performance",
-        "perform",
-        "performed",
-        "performing",
-        "live",
-        "concert",
-        "stage",
-        "band",
-        "artist",
-        "singer",
-        "musician",
-        "vocalist",
-        "player",
-        "talent",
-        "talented",
-        "skilled",
-        "voice",
-    ],
-    "appreciation": [
-        "thank",
-        "thanks",
-        "grateful",
-        "appreciate",
-        "appreciation",
-        "blessed",
-        "legend",
-        "legendary",
-        "iconic",
-        "icon",
-        "genius",
-        "brilliant",
-        "outstanding",
-        "exceptional",
-        "favorite",
-        "favourite",
-    ],
-    "discovery": [
-        "discovered",
-        "discover",
-        "finding",
-        "stumbled",
-        "recommended",
-        "algorithm",
-        "suggestion",
-        "suggested",
-        "introduced",
-        "first",
-        "hearing",
-        "heard",
-        "listened",
-    ],
-    "criticism": [
-        "bad",
-        "terrible",
-        "awful",
-        "worst",
-        "hate",
-        "boring",
-        "overrated",
-        "disappointed",
-        "disappointing",
-        "annoying",
-        "cringe",
-        "trash",
-        "garbage",
-        "sucks",
-        "ruined",
-        "problem",
-        "issue",
-        "wrong",
-    ],
-    "video_production": [
-        "video",
-        "editing",
-        "edit",
-        "visuals",
-        "visual",
-        "effects",
-        "animation",
-        "quality",
-        "resolution",
-        "hd",
-        "4k",
-        "footage",
-        "cinematography",
-        "director",
-        "directed",
-    ],
-    "engagement": [
-        "subscribe",
-        "subscribed",
-        "notification",
-        "bell",
-        "share",
-        "shared",
-        "recommend",
-        "recommended",
-        "tell",
-        "spread",
-        "viral",
-    ],
-}
+# Regex pattern for word extraction (3+ letter words including accented chars)
+WORD_PATTERN = re.compile(r"\b[a-zA-ZÀ-ÿ]{3,}\b")
 
 
 @dataclass
 class TopicResult:
+    """Result from topic extraction."""
+
     topic_id: int
     name: str
     keywords: list[str]
@@ -901,22 +38,19 @@ class TopicResult:
 
 
 def extract_keywords_simple(texts: list[str], top_n: int = 5) -> list[str]:
-    """Simple keyword extraction using word frequency with stopword filtering."""
+    """Extract keywords using word frequency with stopword filtering."""
     words = []
     for text in texts:
-        # Match words with accented characters (French, Spanish, etc.)
-        # Require at least 3 characters
-        text_words = re.findall(r"\b[a-zA-ZÀ-ÿ]{3,}\b", text.lower())
+        text_words = WORD_PATTERN.findall(text.lower())
         words.extend([w for w in text_words if w not in STOPWORDS and len(w) >= 3])
 
     word_counts = Counter(words)
-    # Filter out any remaining low-value words
     filtered = [(w, c) for w, c in word_counts.most_common(top_n * 2) if c >= 2]
     return [word for word, _ in filtered[:top_n]]
 
 
 def detect_theme(text: str) -> str | None:
-    """Detect the semantic theme of a comment based on keywords."""
+    """Detect semantic theme of text based on keyword matching."""
     text_lower = text.lower()
     theme_scores: dict[str, int] = {}
 
@@ -931,34 +65,19 @@ def detect_theme(text: str) -> str | None:
 
 
 def format_theme_name(theme: str) -> str:
-    """Convert theme key to human-readable name."""
-    theme_names = {
-        "music_quality": "Music Quality",
-        "nostalgia": "Nostalgic Memories",
-        "emotional_impact": "Emotional Response",
-        "lyrics": "Lyrics & Meaning",
-        "performance": "Artist Performance",
-        "appreciation": "Fan Appreciation",
-        "discovery": "Content Discovery",
-        "criticism": "Constructive Feedback",
-        "video_production": "Video Production",
-        "engagement": "Community Engagement",
-    }
-    return theme_names.get(theme, theme.replace("_", " ").title())
+    """Convert theme key to human-readable display name."""
+    return THEME_DISPLAY_NAMES.get(theme, theme.replace("_", " ").title())
 
 
 def validate_keywords(keywords: list[str]) -> list[str]:
-    """Validate and filter keywords to ensure quality."""
+    """Filter keywords to ensure quality."""
     valid = []
     for kw in keywords:
         kw_lower = kw.lower()
-        # Skip if it's a stopword
         if kw_lower in STOPWORDS:
             continue
-        # Skip very short words
         if len(kw) < 3:
             continue
-        # Skip if all digits
         if kw.isdigit():
             continue
         valid.append(kw)
@@ -972,59 +91,43 @@ def generate_topic_phrase(
     Generate a meaningful phrase for a topic.
 
     Strategy:
-    1. Use theme name if descriptive (not generic like "Topic 1")
+    1. Use theme name if descriptive
     2. Extract most frequent bigram from sample texts
     3. Fall back to capitalized top keyword
-    4. Never return raw keyword concatenation
     """
-    # Check if name is already descriptive (not generic)
+    theme_indicators = [
+        "quality",
+        "memories",
+        "emotional",
+        "lyrics",
+        "performance",
+        "appreciation",
+        "discovery",
+        "feedback",
+        "production",
+        "engagement",
+    ]
+
     if name and not name.lower().startswith("topic ") and len(name) > 3:
-        # Theme names from format_theme_name are already good
-        if any(
-            theme_word in name.lower()
-            for theme_word in [
-                "quality",
-                "memories",
-                "emotional",
-                "lyrics",
-                "performance",
-                "appreciation",
-                "discovery",
-                "feedback",
-                "production",
-                "engagement",
-            ]
-        ):
+        if any(word in name.lower() for word in theme_indicators):
             return name
 
-    # Try to extract meaningful bigrams from sample texts
     if sample_texts and len(sample_texts) >= 2:
         bigram_counts: Counter = Counter()
-        for text in sample_texts[:10]:  # Limit to first 10 samples
-            # Extract words, filter stopwords
-            words = [
-                w.lower()
-                for w in re.findall(r"\b[a-zA-ZÀ-ÿ]{3,}\b", text)
-                if w.lower() not in STOPWORDS
-            ]
-            # Create bigrams
+        for text in sample_texts[:10]:
+            words = [w.lower() for w in WORD_PATTERN.findall(text) if w.lower() not in STOPWORDS]
             for i in range(len(words) - 1):
                 bigram = f"{words[i]} {words[i + 1]}"
                 bigram_counts[bigram] += 1
 
-        # Get the most common bigram that appears at least twice
         common_bigrams = [bigram for bigram, count in bigram_counts.most_common(5) if count >= 2]
         if common_bigrams:
-            # Capitalize each word
             return " ".join(word.capitalize() for word in common_bigrams[0].split())
 
-    # Fall back to top keyword(s) - but make it readable
     valid_keywords = [kw for kw in keywords if kw.lower() not in STOPWORDS]
     if valid_keywords:
-        # Return just the top keyword, capitalized
         return valid_keywords[0].capitalize()
 
-    # Last resort: use the name if it exists
     if name:
         return name.capitalize()
 
@@ -1032,9 +135,7 @@ def generate_topic_phrase(
 
 
 class TopicModeler:
-    """
-    Topic modeling using BERTopic with sentence embeddings.
-    """
+    """Topic modeling using BERTopic with sentence embeddings."""
 
     _instance: "TopicModeler | None" = None
     _model_loaded_at: float | None = None
@@ -1046,7 +147,8 @@ class TopicModeler:
         logger.info("[Topics] TopicModeler initialized")
 
     @property
-    def embedding_model(self):
+    def embedding_model(self) -> SentenceTransformer:
+        """Lazy-load and cache the embedding model."""
         if self._embedding_model is None:
             logger.info(f"[Topics] Loading embedding model: {self._embedding_model_name}")
             start = time.time()
@@ -1060,16 +162,15 @@ class TopicModeler:
         return self._embedding_model
 
     def _create_topic_model(self, nr_topics: int | str = "auto", num_docs: int = 100) -> "BERTopic":
+        """Create a BERTopic model with custom vectorizer."""
         from sklearn.feature_extraction.text import CountVectorizer
 
-        # Dynamic min_df: use 1 for small datasets to prevent "max_df" errors
         min_df = 1 if num_docs < 20 else 2
 
-        # Use custom vectorizer with stopword filtering
         vectorizer = CountVectorizer(
             stop_words=list(STOPWORDS),
             min_df=min_df,
-            max_df=0.95,  # Filter overly common terms
+            max_df=0.95,
             ngram_range=(1, 2),
         )
         return BERTopic(
@@ -1099,7 +200,7 @@ class TopicModeler:
             max_topics: Maximum number of topics to return
 
         Returns:
-            List of TopicResult objects
+            List of TopicResult objects sorted by engagement
         """
         start_time = time.time()
 
@@ -1109,7 +210,7 @@ class TopicModeler:
             max_topics = settings.MAX_TOPICS_ML
 
         logger.info(
-            f"[Topics] Starting topic extraction for {len(texts)} comments "
+            f"[Topics] Starting extraction for {len(texts)} comments "
             f"(min_size={min_topic_size}, max_topics={max_topics})"
         )
 
@@ -1123,46 +224,66 @@ class TopicModeler:
         if sentiments is None:
             sentiments = ["neutral"] * len(texts)
 
-        # Pre-clustering vocabulary validation: count unique non-stopword tokens
-        unique_tokens = set()
-        for text in texts:
-            text_words = re.findall(r"\b[a-zA-ZÀ-ÿ]{3,}\b", text.lower())
-            unique_tokens.update(w for w in text_words if w not in STOPWORDS)
-
+        unique_tokens = self._count_unique_tokens(texts)
         if len(unique_tokens) < 10:
-            logger.info(
-                f"[Topics] Insufficient vocabulary: {len(unique_tokens)} unique words, "
-                "need at least 10."
-            )
+            logger.info(f"[Topics] Insufficient vocabulary: {len(unique_tokens)} unique words")
             return []
 
         nr_topics = min(max_topics, max(2, len(texts) // min_topic_size))
-        logger.info(f"[Topics] Target topics: {nr_topics}, vocabulary size: {len(unique_tokens)}")
+        logger.info(f"[Topics] Target topics: {nr_topics}, vocabulary: {len(unique_tokens)}")
 
         try:
-            logger.info("[Topics] Generating embeddings...")
-            embed_start = time.time()
-            topic_model = self._create_topic_model(nr_topics=nr_topics, num_docs=len(texts))
-            topics, _ = topic_model.fit_transform(texts)
-            logger.info(f"[Topics] BERTopic fit complete in {time.time() - embed_start:.2f}s")
-
+            topic_model, topics = self._fit_model(texts, nr_topics)
             topic_info = topic_model.get_topic_info()
             topic_info = topic_info[topic_info["Topic"] != -1]
-            logger.info(f"[Topics] Found {len(topic_info)} clusters (excluding noise)")
-
-        except ValueError as e:
-            logger.warning(f"[Topics] Vectorizer error: {e}")
-            return []
+            logger.info(f"[Topics] Found {len(topic_info)} clusters")
         except Exception as e:
-            logger.warning(f"[Topics] Topic extraction failed: {e}")
+            logger.warning(f"[Topics] Extraction failed: {e}")
             return []
 
+        results = self._build_results(
+            topic_info, topic_model, topics, texts, engagement_scores, sentiments
+        )
+
+        results.sort(key=lambda x: x.total_engagement, reverse=True)
+        elapsed = time.time() - start_time
+        logger.info(f"[Topics] Complete: {len(results[:max_topics])} topics in {elapsed:.2f}s")
+
+        return results[:max_topics]
+
+    def _count_unique_tokens(self, texts: list[str]) -> set[str]:
+        """Count unique non-stopword tokens in texts."""
+        unique_tokens = set()
+        for text in texts:
+            text_words = WORD_PATTERN.findall(text.lower())
+            unique_tokens.update(w for w in text_words if w not in STOPWORDS)
+        return unique_tokens
+
+    def _fit_model(self, texts: list[str], nr_topics: int) -> tuple["BERTopic", list[int]]:
+        """Fit BERTopic model and return topics."""
+        logger.info("[Topics] Generating embeddings...")
+        embed_start = time.time()
+        topic_model = self._create_topic_model(nr_topics=nr_topics, num_docs=len(texts))
+        topics, _ = topic_model.fit_transform(texts)
+        logger.info(f"[Topics] BERTopic fit complete in {time.time() - embed_start:.2f}s")
+        return topic_model, topics
+
+    def _build_results(
+        self,
+        topic_info,
+        topic_model: "BERTopic",
+        topics: list[int],
+        texts: list[str],
+        engagement_scores: list[int],
+        sentiments: list[str],
+    ) -> list[TopicResult]:
+        """Build TopicResult objects from BERTopic output."""
         results = []
+
         for _, row in topic_info.iterrows():
             topic_id = row["Topic"]
-
             topic_words = topic_model.get_topic(topic_id)
-            # Extract and validate keywords
+
             raw_keywords = [word for word, _ in topic_words[:10]] if topic_words else []
             keywords = validate_keywords(raw_keywords)[:5]
 
@@ -1170,25 +291,8 @@ class TopicModeler:
             mention_count = len(indices)
             total_engagement = sum(engagement_scores[i] for i in indices)
 
-            # Calculate sentiment breakdown
-            sentiment_counts: dict[str, int] = {}
-            for idx in indices:
-                sent = sentiments[idx] if idx < len(sentiments) else "neutral"
-                sentiment_counts[sent] = sentiment_counts.get(sent, 0) + 1
-
-            # Generate meaningful name
-            if keywords:
-                name = keywords[0].capitalize()
-            else:
-                # Try to detect theme from the comments in this cluster
-                cluster_texts = [texts[i] for i in indices]
-                themes = [detect_theme(t) for t in cluster_texts]
-                themes = [t for t in themes if t]
-                if themes:
-                    most_common_theme = Counter(themes).most_common(1)[0][0]
-                    name = format_theme_name(most_common_theme)
-                else:
-                    name = f"Topic {topic_id + 1}"
+            sentiment_counts = self._count_sentiments(indices, sentiments)
+            name = self._generate_name(keywords, indices, texts)
 
             results.append(
                 TopicResult(
@@ -1201,19 +305,32 @@ class TopicModeler:
                     comment_indices=indices,
                 )
             )
-            logger.info(
-                f"[Topics] Cluster {topic_id}: '{name}' with {mention_count} comments, "
-                f"keywords={keywords[:3]}"
-            )
+            logger.info(f"[Topics] Cluster {topic_id}: '{name}' with {mention_count} comments")
 
-        results.sort(key=lambda x: x.total_engagement, reverse=True)
+        return results
 
-        elapsed = time.time() - start_time
-        logger.info(
-            f"[Topics] ML extraction complete: {len(results[:max_topics])} topics in {elapsed:.2f}s"
-        )
+    def _count_sentiments(self, indices: list[int], sentiments: list[str]) -> dict[str, int]:
+        """Count sentiment distribution for topic indices."""
+        sentiment_counts: dict[str, int] = {}
+        for idx in indices:
+            sent = sentiments[idx] if idx < len(sentiments) else "neutral"
+            sentiment_counts[sent] = sentiment_counts.get(sent, 0) + 1
+        return sentiment_counts
 
-        return results[:max_topics]
+    def _generate_name(self, keywords: list[str], indices: list[int], texts: list[str]) -> str:
+        """Generate topic name from keywords or theme detection."""
+        if keywords:
+            return keywords[0].capitalize()
+
+        cluster_texts = [texts[i] for i in indices]
+        themes = [detect_theme(t) for t in cluster_texts]
+        themes = [t for t in themes if t]
+
+        if themes:
+            most_common = Counter(themes).most_common(1)[0][0]
+            return format_theme_name(most_common)
+
+        return f"Topic {indices[0] + 1}" if indices else "General"
 
 
 @lru_cache(maxsize=1)
