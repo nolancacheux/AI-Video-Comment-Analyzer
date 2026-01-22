@@ -21,6 +21,7 @@ build/
 develop-eggs/
 dist/
 downloads/
+.planning/
 eggs/
 .eggs/
 /lib/
