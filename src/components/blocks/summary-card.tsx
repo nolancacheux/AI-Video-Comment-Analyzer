@@ -1,6 +1,7 @@
 "use client";
 
-import { Heart, AlertTriangle, Lightbulb, MessageSquare } from "lucide-react";
+import { useState } from "react";
+import { Heart, AlertTriangle, Lightbulb, MessageSquare, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SentimentType, SentimentSummaryText, Topic } from "@/types";
 
@@ -56,6 +57,7 @@ export function SummaryCard({
   totalLikes,
   className,
 }: SummaryCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const config = sentimentConfig[sentiment];
   const Icon = config.icon;
 
@@ -65,6 +67,7 @@ export function SummaryCard({
     .slice(0, 5);
 
   const hasEnoughData = commentCount >= 5;
+  const hasSummary = hasEnoughData && summary?.summary;
 
   return (
     <div
@@ -124,10 +127,33 @@ export function SummaryCard({
           <h4 className="text-[10px] font-semibold text-[#6B7280] uppercase tracking-wider mb-0.5">
             Summary
           </h4>
-          {hasEnoughData && summary?.summary ? (
-            <p className="text-xs text-[#1E3A5F] leading-relaxed line-clamp-3">
-              {summary.summary}
-            </p>
+          {hasSummary ? (
+            <div>
+              <p
+                className={cn(
+                  "text-xs text-[#1E3A5F] leading-relaxed",
+                  !isExpanded && "line-clamp-3"
+                )}
+              >
+                {summary.summary}
+              </p>
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="mt-1.5 flex items-center gap-1 text-[10px] font-medium text-[#D4714E] hover:text-[#C4613E] transition-colors"
+              >
+                {isExpanded ? (
+                  <>
+                    <ChevronUp className="h-3 w-3" />
+                    Show less
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-3 w-3" />
+                    Read more
+                  </>
+                )}
+              </button>
+            </div>
           ) : (
             <p className="text-xs text-[#6B7280] italic">
               {hasEnoughData ? "AI summary unavailable" : "Need 5+ comments"}
