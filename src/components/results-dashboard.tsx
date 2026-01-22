@@ -1,9 +1,8 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { ABSASection } from "@/components/results/absa-section";
 import type { AnalysisResult, Topic, SentimentType, PriorityLevel } from "@/types";
@@ -21,12 +20,6 @@ const SENTIMENT_COLORS: Record<SentimentType, string> = {
   suggestion: "text-blue-600 bg-blue-50 border-blue-200",
 };
 
-const SENTIMENT_LABELS: Record<SentimentType, string> = {
-  positive: "LOVE",
-  negative: "DISLIKE",
-  neutral: "NEUTRAL",
-  suggestion: "SUGGESTIONS",
-};
 
 const PRIORITY_COLORS: Record<PriorityLevel, string> = {
   high: "bg-rose-100 text-rose-700 border-rose-300",

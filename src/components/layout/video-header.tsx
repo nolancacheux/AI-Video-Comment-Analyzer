@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { ExternalLink, MessageSquare, Calendar, User } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Video } from "@/types";

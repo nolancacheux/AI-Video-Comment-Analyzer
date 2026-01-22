@@ -4,7 +4,7 @@ import * as React from "react";
 import { MessageSquare, ThumbsUp, AlertTriangle, Lightbulb, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import type { Topic, PriorityLevel, SentimentType } from "@/types";
+import type { Topic } from "@/types";
 
 interface TopicCardProps {
   topic: Topic;

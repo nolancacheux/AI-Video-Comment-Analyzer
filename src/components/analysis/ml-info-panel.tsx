@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { Cpu, Zap, Clock, Gauge, Database, Brain } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 
 interface MLInfoPanelProps {

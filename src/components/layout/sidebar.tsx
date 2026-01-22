@@ -5,7 +5,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
-  X,
   Clock,
   Trash2,
 } from "lucide-react";
@@ -275,7 +274,7 @@ export function Sidebar({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete analysis?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the analysis for "{deleteItem?.video_title}". This action cannot be undone.
+              This will permanently delete the analysis for &ldquo;{deleteItem?.video_title}&rdquo;. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

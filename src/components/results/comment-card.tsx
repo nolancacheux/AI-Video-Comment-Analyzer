@@ -5,7 +5,7 @@ import { ThumbsUp, User, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { getHighlightedSegments } from "@/lib/highlight-words";
-import type { Comment, SentimentType } from "@/types";
+import type { Comment } from "@/types";
 
 interface CommentCardProps {
   comment: Comment;

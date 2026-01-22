@@ -32,7 +32,6 @@ export interface HighlightedWord {
 
 export function highlightText(text: string): HighlightedWord[] {
   const words: HighlightedWord[] = [];
-  const lowerText = text.toLowerCase();
 
   // Create a map of all word positions
   const wordRegex = /\b[\w']+\b/g;
