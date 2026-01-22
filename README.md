@@ -17,23 +17,24 @@
 - **Multi-Page Dashboard**: Dedicated pages for Overview, Charts, Topics, and Comments
 - **Real-time Progress**: SSE streaming with ML metrics during analysis
 
-## Screenshots
+<details>
+<summary>Home</summary>
+<img src="demo/home.png" alt="Home" width="700">
+</details>
 
 <details>
-<summary>View Screenshots</summary>
-
-### Home
-<img src="demo/home.png" alt="Home" width="700">
-
-### Overview
+<summary>Overview</summary>
 <img src="demo/overview.png" alt="Overview" width="700">
+</details>
 
-### Charts
+<details>
+<summary>Charts</summary>
 <img src="demo/charts.png" alt="Charts" width="700">
+</details>
 
-### Suggestions
+<details>
+<summary>Suggestions</summary>
 <img src="demo/suggestions.png" alt="Suggestions" width="700">
-
 </details>
 
 ## Quick Start
