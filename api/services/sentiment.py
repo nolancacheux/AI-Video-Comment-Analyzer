@@ -5,17 +5,12 @@ from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
 
+import torch
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
 from api.config import settings
 
 logger = logging.getLogger(__name__)
-
-try:
-    import torch
-    from transformers import AutoModelForSequenceClassification, AutoTokenizer
-
-    ML_AVAILABLE = True
-except ImportError:
-    ML_AVAILABLE = False
 
 # Module-level cache for model loading time
 _model_loaded_at: float | None = None
@@ -62,69 +57,6 @@ SUGGESTION_PATTERNS = [
     r"\bune\s+(?:suggestion|idee|proposition)\b",
 ]
 
-POSITIVE_KEYWORDS = [
-    "love",
-    "great",
-    "amazing",
-    "awesome",
-    "excellent",
-    "perfect",
-    "best",
-    "fantastic",
-    "wonderful",
-    "thank",
-    "thanks",
-    "helpful",
-    "appreciate",
-    "good",
-    "nice",
-    "cool",
-    "brilliant",
-    "beautiful",
-    "super",
-    "genial",
-    "merci",
-    "bravo",
-    "magnifique",
-    "parfait",
-    "incroyable",
-    # French positive phrases
-    "adore",       # "j'adore" = I love
-    "trop bien",   # "trop bien" = so good
-    "hâte",        # "j'ai hâte de" = looking forward to
-    "hate de",     # without accent variant
-    "génial",      # with accent
-    "superbe",
-    "formidable",
-]
-
-NEGATIVE_KEYWORDS = [
-    "hate",
-    "terrible",
-    "awful",
-    "worst",
-    "bad",
-    "poor",
-    "horrible",
-    "disappointing",
-    "sucks",
-    "boring",
-    "annoying",
-    "useless",
-    "waste",
-    "wrong",
-    "stupid",
-    "ridiculous",
-    "pathetic",
-    "trash",
-    "garbage",
-    "nul",
-    "pourri",
-    "mauvais",
-    "horrible",
-    "decevant",
-]
-
 COMPILED_SUGGESTION_PATTERNS = [re.compile(p, re.IGNORECASE) for p in SUGGESTION_PATTERNS]
 
 
@@ -133,21 +65,6 @@ def is_suggestion(text: str) -> bool:
         if pattern.search(text):
             return True
     return False
-
-
-def simple_sentiment(text: str) -> SentimentCategory:
-    """Simple keyword-based sentiment analysis fallback."""
-    text_lower = text.lower()
-
-    positive_score = sum(1 for kw in POSITIVE_KEYWORDS if kw in text_lower)
-    negative_score = sum(1 for kw in NEGATIVE_KEYWORDS if kw in text_lower)
-
-    if positive_score > negative_score:
-        return SentimentCategory.POSITIVE
-    elif negative_score > positive_score:
-        return SentimentCategory.NEGATIVE
-    else:
-        return SentimentCategory.NEUTRAL
 
 
 class SentimentAnalyzer:
@@ -163,16 +80,10 @@ class SentimentAnalyzer:
         self._model = None
         self._tokenizer = None
         self._device = None
-        self._ml_available = ML_AVAILABLE
-        logger.info(
-            "[Sentiment] SentimentAnalyzer initialized, ML available: %s",
-            self._ml_available,
-        )
+        logger.info("[Sentiment] SentimentAnalyzer initialized")
 
     @property
     def device(self):
-        if not self._ml_available:
-            return None
         if self._device is None:
             self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             logger.info("[Sentiment] Using device: %s", self._device)
@@ -185,8 +96,6 @@ class SentimentAnalyzer:
     @property
     def model(self):
         global _model_loaded_at
-        if not self._ml_available:
-            return None
         if self._model is None:
             logger.info("[Sentiment] Loading model: %s", self.MODEL_NAME)
             start = time.time()
@@ -204,8 +113,6 @@ class SentimentAnalyzer:
 
     @property
     def tokenizer(self):
-        if not self._ml_available:
-            return None
         if self._tokenizer is None:
             logger.info("[Sentiment] Loading tokenizer: %s", self.MODEL_NAME)
             self._tokenizer = AutoTokenizer.from_pretrained(self.MODEL_NAME)
@@ -220,14 +127,6 @@ class SentimentAnalyzer:
                 category=SentimentCategory.SUGGESTION,
                 score=0.8,
                 is_suggestion=True,
-            )
-
-        if not self._ml_available:
-            category = simple_sentiment(text)
-            return SentimentResult(
-                category=category,
-                score=0.7,
-                is_suggestion=False,
             )
 
         inputs = self.tokenizer(
@@ -295,21 +194,6 @@ class SentimentAnalyzer:
             total_batches,
             batch_size,
         )
-
-        if not self._ml_available:
-            logger.info("[Sentiment] Using fallback keyword-based analysis")
-            for i, text in enumerate(texts):
-                result = self.analyze_single(text)
-                progress = BatchProgress(
-                    batch_num=(i // batch_size) + 1,
-                    total_batches=total_batches,
-                    processed=i + 1,
-                    total=len(texts),
-                    batch_time_ms=5.0,
-                    tokens_in_batch=len(text.split()),
-                )
-                yield result, progress
-            return
 
         # Track statistics across batches
         processed = 0
