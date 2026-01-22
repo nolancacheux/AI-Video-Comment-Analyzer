@@ -4,7 +4,7 @@ AI-powered YouTube comment analysis tool with ML-powered sentiment detection, to
 
 ## Features
 
-- **Comment Extraction**: Fetch up to 500 comments from any YouTube video using yt-dlp
+- **Comment Extraction**: Fetch up to a configurable comment limit per video using yt-dlp (default 100)
 - **Sentiment Analysis**: BERT-powered multilingual sentiment classification (positive/negative/neutral/suggestion)
 - **Topic Modeling**: BERTopic clustering to identify key discussion themes
 - **AI Summaries**: Local LLM-powered summaries via Ollama (llama3.2:3b)
@@ -150,16 +150,12 @@ Copy `.env.example` to `.env` and configure:
 
 ```bash
 # YouTube
-YOUTUBE_MAX_COMMENTS=500
+YOUTUBE_MAX_COMMENTS=100
 
 # Ollama (AI Summaries)
 OLLAMA_URL=http://localhost:11434
 OLLAMA_MODEL=llama3.2:3b
 OLLAMA_ENABLED=true
-
-# Hugging Face (optional)
-HF_TOKEN=your_token_here
-HF_ENABLED=true
 
 # ML Processing
 SENTIMENT_BATCH_SIZE=32
