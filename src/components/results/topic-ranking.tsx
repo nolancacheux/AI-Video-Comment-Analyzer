@@ -68,7 +68,7 @@ const sentimentConfig: Record<SentimentType, {
     borderColor: "border-blue-200",
   },
   neutral: {
-    label: "General",
+    label: "Neutral",
     icon: <MessageCircle className="h-4 w-4" />,
     bgColor: "bg-stone-50",
     textColor: "text-stone-700",

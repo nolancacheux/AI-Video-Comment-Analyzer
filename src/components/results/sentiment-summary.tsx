@@ -50,7 +50,7 @@ const sentimentConfig: Record<SentimentType, {
     iconBg: "bg-blue-100",
   },
   neutral: {
-    title: "General Comments",
+    title: "Neutral Comments",
     icon: <Sparkles className="h-5 w-5" />,
     bgColor: "bg-stone-50/50",
     borderColor: "border-l-stone-400",
