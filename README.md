@@ -1,21 +1,15 @@
 # AI-Video-Comment-Analyzer
 
-AI-powered YouTube comment analysis tool with sentiment detection, topic modeling, and aspect-based analysis.
+AI-powered YouTube comment analysis tool with sentiment detection, topic modeling, and AI-generated summaries.
 
 ## Features
 
 - **Comment Extraction**: Fetch comments from any YouTube video using yt-dlp
 - **Sentiment Analysis**: BERT-powered multilingual sentiment classification (positive/negative/neutral/suggestion)
 - **Topic Modeling**: BERTopic clustering to identify key discussion themes
-- **Aspect-Based Sentiment Analysis (ABSA)**: Zero-shot analysis across 5 video dimensions:
-  - Content (information quality, explanations)
-  - Audio (sound quality, voice clarity)
-  - Production (editing, visual quality)
-  - Pacing (video length, rhythm)
-  - Presenter (personality, delivery)
-- **Health Scoring**: 0-100 channel health score with trend tracking
-- **Smart Recommendations**: Prioritized action items based on viewer feedback
-- **Interactive Dashboard**: Real-time analysis progress with Recharts visualizations
+- **AI Summaries**: Local LLM-powered summaries via Ollama (llama3.2:3b)
+- **Interactive Dashboard**: Real-time analysis progress with topic ranking sidebar
+- **Topic Slide-Over**: Click any topic to see all related comments
 
 ## Quick Start
 
@@ -25,6 +19,7 @@ AI-powered YouTube comment analysis tool with sentiment detection, topic modelin
 - pnpm
 - Python 3.11+
 - [uv](https://docs.astral.sh/uv/) (Python package manager)
+- [Ollama](https://ollama.ai) (optional, for AI summaries)
 
 ### Frontend Setup
 
@@ -53,15 +48,30 @@ uv run uvicorn api.main:app --reload --port 8000
 
 API available at [http://localhost:8000](http://localhost:8000)
 
+### Ollama Setup (Optional)
+
+For AI-generated summaries of comment sentiment:
+
+```bash
+# Install Ollama
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# Pull the model
+ollama pull llama3.2:3b
+
+# Start Ollama server (if not running)
+ollama serve
+```
+
 ## Tech Stack
 
-- **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS v4, shadcn/ui, Recharts
+- **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS v4, shadcn/ui
 - **Backend**: FastAPI, Python 3.11+, yt-dlp
 - **Database**: SQLite with SQLAlchemy
 - **AI/ML**:
   - `nlptown/bert-base-multilingual-uncased-sentiment` (sentiment analysis)
-  - `facebook/bart-large-mnli` (zero-shot aspect detection)
   - BERTopic (topic modeling)
+  - Ollama with llama3.2:3b (AI summaries)
 
 ## Project Structure
 
@@ -69,15 +79,13 @@ API available at [http://localhost:8000](http://localhost:8000)
 AI-Video-Comment-Analyzer/
 ├── src/                    # Next.js frontend
 │   ├── components/         # React components
-│   │   ├── charts/         # Recharts visualizations
-│   │   ├── results/        # Topic cards, ABSA section
+│   │   ├── results/        # Topic ranking, sentiment summaries
 │   │   └── ui/             # shadcn components
 │   ├── hooks/              # useAnalysis hook
 │   └── types/              # TypeScript interfaces
 ├── api/                    # FastAPI backend
 │   ├── services/           # ML services
-│   │   ├── absa.py         # Aspect-based sentiment
-│   │   ├── insights.py     # Recommendations engine
+│   │   ├── summarizer.py   # Ollama LLM integration
 │   │   ├── sentiment.py    # BERT sentiment
 │   │   └── topics.py       # Topic modeling
 │   ├── routers/            # API endpoints
@@ -90,30 +98,24 @@ AI-Video-Comment-Analyzer/
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/api/analysis/analyze` | Start analysis (SSE stream) |
-| GET | `/api/analysis/result/{id}` | Get analysis with ABSA data |
+| GET | `/api/analysis/result/{id}` | Get analysis results |
 | GET | `/api/analysis/history` | List past analyses |
 | DELETE | `/api/analysis/history/{id}` | Delete an analysis |
+| GET | `/api/analysis/video/{id}/comments` | Get comments for a video |
 
-## ABSA Response Example
+## Environment Variables
 
-```json
-{
-  "absa": {
-    "health": {
-      "overall_score": 72,
-      "strengths": ["content", "presenter"],
-      "weaknesses": ["audio"]
-    },
-    "recommendations": [
-      {
-        "aspect": "audio",
-        "priority": "high",
-        "title": "Improve Audio Quality",
-        "action_items": ["Check microphone setup"]
-      }
-    ]
-  }
-}
+Copy `.env.example` to `.env` and configure:
+
+```bash
+# Ollama (AI Summaries)
+OLLAMA_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.2:3b
+OLLAMA_ENABLED=true
+
+# Hugging Face (optional, for faster inference)
+HF_TOKEN=your_token_here
+HF_ENABLED=true
 ```
 
 ## Development
@@ -126,9 +128,6 @@ uv run pytest tests/ -v
 
 # Run with coverage report
 uv run pytest tests/ -v --cov=api --cov-report=term-missing
-
-# Run specific test file
-uv run pytest tests/test_youtube.py -v
 ```
 
 ### Code Quality
@@ -142,9 +141,6 @@ uv run ruff check api/ tests/ --fix
 
 # Format code
 uv run ruff format api/ tests/
-
-# Check formatting (CI mode)
-uv run ruff format --check api/ tests/
 ```
 
 ### CI Pipeline
