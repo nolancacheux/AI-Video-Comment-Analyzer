@@ -34,7 +34,10 @@ const tabs = [
   },
 ];
 
-export function AnalysisTabs({ analysisId, className }: AnalysisTabsProps) {
+export function AnalysisTabs({
+  analysisId,
+  className,
+}: AnalysisTabsProps): JSX.Element {
   const pathname = usePathname();
 
   const isActive = (tab: (typeof tabs)[0]) => {

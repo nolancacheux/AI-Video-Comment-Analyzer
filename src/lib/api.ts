@@ -1,6 +1,26 @@
-import type { AnalysisResult, AnalysisHistoryItem, ProgressEvent, SearchResult } from "@/types";
+import type {
+  AnalysisResult,
+  AnalysisHistoryItem,
+  Comment,
+  ProgressEvent,
+  SearchResult,
+} from "@/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const SSE_DATA_PREFIX = "data: ";
+
+function parseProgressEvent(line: string): ProgressEvent | null {
+  if (!line.startsWith(SSE_DATA_PREFIX)) {
+    return null;
+  }
+
+  const jsonStr = line.slice(SSE_DATA_PREFIX.length);
+  try {
+    return JSON.parse(jsonStr) as ProgressEvent;
+  } catch {
+    return null;
+  }
+}
 
 export async function* analyzeVideo(
   url: string,
@@ -37,14 +57,9 @@ export async function* analyzeVideo(
       buffer = lines.pop() || "";
 
       for (const line of lines) {
-        if (line.startsWith("data: ")) {
-          const jsonStr = line.slice(6);
-          try {
-            const event = JSON.parse(jsonStr) as ProgressEvent;
-            yield event;
-          } catch {
-            // Skip invalid JSON
-          }
+        const event = parseProgressEvent(line);
+        if (event) {
+          yield event;
         }
       }
     }
@@ -89,8 +104,6 @@ export async function getLatestAnalysisForVideo(
   const data = await response.json();
   return data || null;
 }
-
-import type { Comment } from "@/types";
 
 export async function getCommentsByAnalysis(analysisId: number): Promise<Comment[]> {
   const response = await fetch(`${API_BASE}/api/analysis/result/${analysisId}/comments`);

@@ -58,7 +58,7 @@ export function CommentCard({
   topicName,
   confidence,
   showHighlighting = true,
-}: CommentCardProps) {
+}: CommentCardProps): JSX.Element {
   const sentiment = comment.sentiment || "neutral";
   const colors = SENTIMENT_COLORS[sentiment];
 
@@ -92,6 +92,16 @@ export function CommentCard({
       year: "numeric",
     });
   };
+
+  let likeClassName = "text-stone-400";
+  let likeIconClassName = "";
+
+  if (comment.like_count >= 100) {
+    likeClassName = "text-amber-600 font-semibold";
+    likeIconClassName = "fill-amber-500";
+  } else if (comment.like_count >= 10) {
+    likeClassName = "text-stone-600";
+  }
 
   return (
     <div
@@ -151,20 +161,11 @@ export function CommentCard({
 
         {/* Footer */}
         <div className="flex items-center justify-between mt-2 pt-2 border-t border-stone-200/80">
-          <div
-            className={cn(
-              "flex items-center gap-1",
-              comment.like_count >= 100
-                ? "text-amber-600 font-semibold"
-                : comment.like_count >= 10
-                ? "text-stone-600"
-                : "text-stone-400"
-            )}
-          >
+          <div className={cn("flex items-center gap-1", likeClassName)}>
             <ThumbsUp
               className={cn(
                 "h-3 w-3",
-                comment.like_count >= 100 && "fill-amber-500"
+                likeIconClassName
               )}
             />
             <span className="text-[10px] tabular-nums">

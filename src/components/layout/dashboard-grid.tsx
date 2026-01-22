@@ -8,7 +8,10 @@ interface DashboardGridProps {
   className?: string;
 }
 
-export function DashboardGrid({ children, className }: DashboardGridProps) {
+export function DashboardGrid({
+  children,
+  className,
+}: DashboardGridProps): JSX.Element {
   return (
     <div
       className={cn(
@@ -27,7 +30,7 @@ interface ChartRowProps {
   className?: string;
 }
 
-export function ChartRow({ children, className }: ChartRowProps) {
+export function ChartRow({ children, className }: ChartRowProps): JSX.Element {
   return (
     <div className={cn("grid grid-cols-3 gap-4", className)}>{children}</div>
   );
@@ -47,7 +50,7 @@ export function ChartCard({
   children,
   className,
   action,
-}: ChartCardProps) {
+}: ChartCardProps): JSX.Element {
   return (
     <div
       className={cn(
@@ -80,7 +83,7 @@ interface TopicsRowProps {
   className?: string;
 }
 
-export function TopicsRow({ children, className }: TopicsRowProps) {
+export function TopicsRow({ children, className }: TopicsRowProps): JSX.Element {
   return (
     <div
       className={cn(
@@ -99,7 +102,10 @@ interface CommentsRowProps {
   className?: string;
 }
 
-export function CommentsRow({ children, className }: CommentsRowProps) {
+export function CommentsRow({
+  children,
+  className,
+}: CommentsRowProps): JSX.Element {
   return (
     <div
       className={cn(
@@ -118,7 +124,7 @@ interface StatsGridProps {
   className?: string;
 }
 
-export function StatsGrid({ children, className }: StatsGridProps) {
+export function StatsGrid({ children, className }: StatsGridProps): JSX.Element {
   return (
     <div className={cn("grid grid-cols-4 gap-4", className)}>{children}</div>
   );
@@ -138,7 +144,7 @@ export function StatCard({
   subValue,
   color = "neutral",
   icon,
-}: StatCardProps) {
+}: StatCardProps): JSX.Element {
   // Editorial color scheme with warm, sophisticated tones
   const colorConfig = {
     love: {

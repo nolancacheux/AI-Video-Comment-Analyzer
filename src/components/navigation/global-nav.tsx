@@ -9,7 +9,7 @@ interface GlobalNavProps {
   className?: string;
 }
 
-export function GlobalNav({ className }: GlobalNavProps) {
+export function GlobalNav({ className }: GlobalNavProps): JSX.Element {
   const pathname = usePathname();
   const isHome = pathname === "/";
 

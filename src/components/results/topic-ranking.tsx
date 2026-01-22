@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import type { Topic, SentimentType, PriorityLevel } from "@/types";
 import { Heart, ThumbsDown, Lightbulb, MessageCircle } from "lucide-react";
@@ -11,7 +12,7 @@ interface TopicRankingProps {
 }
 
 // Priority badge component
-function PriorityBadge({ priority }: { priority: PriorityLevel }) {
+function PriorityBadge({ priority }: { priority: PriorityLevel }): JSX.Element {
   const config: Record<PriorityLevel, { label: string; className: string }> = {
     high: {
       label: "High",
@@ -41,7 +42,7 @@ function PriorityBadge({ priority }: { priority: PriorityLevel }) {
 
 const sentimentConfig: Record<SentimentType, {
   label: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   bgColor: string;
   textColor: string;
   borderColor: string;
@@ -76,7 +77,11 @@ const sentimentConfig: Record<SentimentType, {
   },
 };
 
-export function TopicRanking({ topics, onTopicClick, selectedTopicId }: TopicRankingProps) {
+export function TopicRanking({
+  topics,
+  onTopicClick,
+  selectedTopicId,
+}: TopicRankingProps): JSX.Element {
   // Group topics by sentiment
   const groupedTopics = topics.reduce((acc, topic) => {
     const category = topic.sentiment_category;

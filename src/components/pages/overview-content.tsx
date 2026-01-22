@@ -12,7 +12,7 @@ interface OverviewContentProps {
   comments: Comment[];
 }
 
-export function OverviewContent({ analysis, comments }: OverviewContentProps) {
+export function OverviewContent({ analysis, comments }: OverviewContentProps): JSX.Element {
   const { sentiment, topics, summaries, total_comments } = analysis;
 
   // Calculate percentages
@@ -30,25 +30,25 @@ export function OverviewContent({ analysis, comments }: OverviewContentProps) {
   );
 
   // Determine dominant sentiment
-  const dominantSentiment =
-    sentiment.positive_count > sentiment.negative_count
-      ? "positive"
-      : sentiment.negative_count > sentiment.positive_count
-        ? "negative"
-        : "balanced";
+  let dominantSentiment: "positive" | "negative" | "balanced" = "balanced";
+  if (sentiment.positive_count > sentiment.negative_count) {
+    dominantSentiment = "positive";
+  } else if (sentiment.negative_count > sentiment.positive_count) {
+    dominantSentiment = "negative";
+  }
 
   // Net tone
   const netTone = positivePercent - negativePercent;
-  const toneLabel =
-    netTone > 20
-      ? "Very Positive"
-      : netTone > 0
-        ? "Positive"
-        : netTone < -20
-          ? "Very Negative"
-          : netTone < 0
-            ? "Negative"
-            : "Balanced";
+  let toneLabel = "Balanced";
+  if (netTone > 20) {
+    toneLabel = "Very Positive";
+  } else if (netTone > 0) {
+    toneLabel = "Positive";
+  } else if (netTone < -20) {
+    toneLabel = "Very Negative";
+  } else if (netTone < 0) {
+    toneLabel = "Negative";
+  }
 
   // Top topic
   const topTopic = topics.length > 0
@@ -89,10 +89,15 @@ export function OverviewContent({ analysis, comments }: OverviewContentProps) {
     neutral: commentsBySentiment.neutral.reduce((sum, c) => sum + c.like_count, 0),
   };
 
-  const ToneIcon =
-    netTone > 0 ? TrendingUp : netTone < 0 ? TrendingDown : Minus;
-  const toneColor =
-    netTone > 0 ? "text-[#2D7A5E]" : netTone < 0 ? "text-[#C44536]" : "text-[#6B7280]";
+  let ToneIcon = Minus;
+  let toneColor = "text-[#6B7280]";
+  if (netTone > 0) {
+    ToneIcon = TrendingUp;
+    toneColor = "text-[#2D7A5E]";
+  } else if (netTone < 0) {
+    ToneIcon = TrendingDown;
+    toneColor = "text-[#C44536]";
+  }
 
   return (
     <div className="space-y-4 h-full">

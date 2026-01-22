@@ -5,7 +5,7 @@ import { useAnalysisData } from "@/hooks/useAnalysisData";
 import { OverviewContent } from "@/components/pages/overview-content";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function OverviewPage() {
+export default function OverviewPage(): JSX.Element {
   const params = useParams();
   const analysisId = params.id ? parseInt(params.id as string, 10) : undefined;
 

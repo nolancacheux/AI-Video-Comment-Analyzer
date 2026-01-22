@@ -56,7 +56,7 @@ export function SummaryCard({
   commentCount,
   totalLikes,
   className,
-}: SummaryCardProps) {
+}: SummaryCardProps): JSX.Element {
   const [isExpanded, setIsExpanded] = useState(false);
   const config = sentimentConfig[sentiment];
   const Icon = config.icon;

@@ -16,7 +16,7 @@ export function ErrorDisplay({
   message,
   onRetry,
   className,
-}: ErrorDisplayProps) {
+}: ErrorDisplayProps): JSX.Element {
   return (
     <Alert variant="destructive" className={cn("max-w-xl mx-auto", className)}>
       <svg

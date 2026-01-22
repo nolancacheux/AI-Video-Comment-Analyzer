@@ -18,7 +18,7 @@ export function VideoHeader({
   totalComments,
   analyzedAt,
   isLoading,
-}: VideoHeaderProps) {
+}: VideoHeaderProps): JSX.Element {
   if (isLoading) {
     return (
       <div className="flex items-center gap-4 rounded-lg border bg-white p-3">

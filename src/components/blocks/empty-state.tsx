@@ -13,7 +13,7 @@ export function EmptyState({
   title = "Not enough comments",
   description = "This category doesn't have enough comments for meaningful analysis.",
   className,
-}: EmptyStateProps) {
+}: EmptyStateProps): JSX.Element {
   return (
     <div
       className={cn(

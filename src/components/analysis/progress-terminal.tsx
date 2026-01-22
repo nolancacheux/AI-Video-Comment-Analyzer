@@ -73,7 +73,7 @@ export function ProgressTerminal({
   commentsFound,
   commentsAnalyzed,
   onCancel,
-}: ProgressTerminalProps) {
+}: ProgressTerminalProps): JSX.Element {
   const getStageStatus = (stageId: AnalysisStage) => {
     const stageIndex = STAGES.findIndex((s) => s.id === stageId);
     const currentIndex = STAGES.findIndex((s) => s.id === currentStage);

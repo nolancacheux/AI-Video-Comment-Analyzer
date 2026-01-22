@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { GlobalNav } from "@/components/navigation/global-nav";
@@ -7,9 +8,12 @@ import { AnalysisTabs } from "@/components/navigation/analysis-tabs";
 import { VideoHeader } from "@/components/layout/video-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAnalysisData } from "@/hooks/useAnalysisData";
-import { AnalysisProvider } from "@/context/analysis-context";
 
-function AnalysisLayoutContent({ children }: { children: React.ReactNode }) {
+function AnalysisLayoutContent({
+  children,
+}: {
+  children: ReactNode;
+}): JSX.Element | null {
   const params = useParams();
   const router = useRouter();
   const analysisId = params.id ? parseInt(params.id as string, 10) : undefined;
@@ -78,11 +82,9 @@ function AnalysisLayoutContent({ children }: { children: React.ReactNode }) {
 export default function AnalysisLayout({
   children,
 }: {
-  children: React.ReactNode;
-}) {
+  children: ReactNode;
+}): JSX.Element {
   return (
-    <AnalysisProvider>
-      <AnalysisLayoutContent>{children}</AnalysisLayoutContent>
-    </AnalysisProvider>
+    <AnalysisLayoutContent>{children}</AnalysisLayoutContent>
   );
 }

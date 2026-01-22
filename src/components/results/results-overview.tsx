@@ -18,12 +18,72 @@ const SENTIMENT_HEADLINES: Record<SentimentType, string> = {
   neutral: "Mostly neutral",
 };
 
+function formatMentions(count: number): string {
+  const label = count === 1 ? "mention" : "mentions";
+  return `${count} ${label}`;
+}
+
+function getNetLabel(netSentiment: number): string {
+  if (netSentiment === 0) {
+    return "Balanced";
+  }
+  if (netSentiment > 0) {
+    return `+${netSentiment}`;
+  }
+  return `${netSentiment}`;
+}
+
+function getNetDetail(netSentiment: number): string {
+  if (netSentiment === 0) {
+    return "Positive and negative are even";
+  }
+  if (netSentiment > 0) {
+    return "More positive than negative";
+  }
+  return "More negative than positive";
+}
+
+function getSuggestionStatus(count: number): string {
+  if (count === 0) {
+    return "None detected";
+  }
+  return `${count} comment${count === 1 ? "" : "s"}`;
+}
+
+function getSuggestionDetail(count: number, percent: number): string {
+  if (count === 0) {
+    return "No suggestion comments";
+  }
+  return `${percent}% of comments`;
+}
+
+function getHeadline(
+  hasComments: boolean,
+  dominantSentiment: SentimentType,
+  percentages: Record<SentimentType, number>
+): string {
+  if (!hasComments) {
+    return "No comments analyzed";
+  }
+  return `${SENTIMENT_HEADLINES[dominantSentiment]} (${percentages[dominantSentiment]}%)`;
+}
+
+function getBreakdown(
+  hasComments: boolean,
+  percentages: Record<SentimentType, number>
+): string {
+  if (!hasComments) {
+    return "No comments were analyzed for this video.";
+  }
+  return `${percentages.positive}% positive, ${percentages.negative}% negative, ${percentages.suggestion}% suggestions, ${percentages.neutral}% neutral.`;
+}
+
 export function ResultsOverview({
   sentiment,
   totalComments,
   topics,
   className,
-}: ResultsOverviewProps) {
+}: ResultsOverviewProps): JSX.Element {
   const hasComments = totalComments > 0;
   const totalForPercent = hasComments ? totalComments : 1;
 
@@ -56,30 +116,12 @@ export function ResultsOverview({
   }, [topics]);
 
   const netSentiment = sentiment.positive_count - sentiment.negative_count;
-  const netLabel = netSentiment === 0
-    ? "Balanced"
-    : netSentiment > 0
-      ? `+${netSentiment}`
-      : `${netSentiment}`;
-  const netDetail = netSentiment === 0
-    ? "Positive and negative are even"
-    : netSentiment > 0
-      ? "More positive than negative"
-      : "More negative than positive";
-
-  const suggestionStatus = sentiment.suggestion_count === 0
-    ? "None detected"
-    : `${sentiment.suggestion_count} comment${sentiment.suggestion_count === 1 ? "" : "s"}`;
-  const suggestionDetail = sentiment.suggestion_count === 0
-    ? "No suggestion comments"
-    : `${percentages.suggestion}% of comments`;
-
-  const headline = hasComments
-    ? `${SENTIMENT_HEADLINES[dominantSentiment]} (${percentages[dominantSentiment]}%)`
-    : "No comments analyzed";
-  const breakdown = hasComments
-    ? `${percentages.positive}% positive, ${percentages.negative}% negative, ${percentages.suggestion}% suggestions, ${percentages.neutral}% neutral.`
-    : "No comments were analyzed for this video.";
+  const netLabel = getNetLabel(netSentiment);
+  const netDetail = getNetDetail(netSentiment);
+  const suggestionStatus = getSuggestionStatus(sentiment.suggestion_count);
+  const suggestionDetail = getSuggestionDetail(sentiment.suggestion_count, percentages.suggestion);
+  const headline = getHeadline(hasComments, dominantSentiment, percentages);
+  const breakdown = getBreakdown(hasComments, percentages);
 
   return (
     <div
@@ -128,9 +170,7 @@ export function ResultsOverview({
               {topTopic ? (topTopic.phrase || topTopic.name) : "No topics detected"}
             </p>
             <p className="text-xs text-stone-500">
-              {topTopic
-                ? `${topTopic.mention_count} mention${topTopic.mention_count === 1 ? "" : "s"}`
-                : "No topic data"}
+              {topTopic ? formatMentions(topTopic.mention_count) : "No topic data"}
             </p>
           </div>
 

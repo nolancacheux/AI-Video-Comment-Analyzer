@@ -24,7 +24,7 @@ const COLORS = {
   Suggestions: "#2563EB", // blue-600
 };
 
-export function EngagementBar({ sentiment }: EngagementBarProps) {
+export function EngagementBar({ sentiment }: EngagementBarProps): JSX.Element {
   const data = [
     {
       name: "Positive",

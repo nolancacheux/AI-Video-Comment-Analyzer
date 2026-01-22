@@ -25,7 +25,14 @@ const COLORS = {
   neutral: "#78716C", // stone-500
 };
 
-export function TopicBubble({ topics }: TopicBubbleProps) {
+const LEGEND_LABELS: Record<keyof typeof COLORS, string> = {
+  positive: "Love",
+  negative: "Dislike",
+  suggestion: "Suggestions",
+  neutral: "Neutral",
+};
+
+export function TopicBubble({ topics }: TopicBubbleProps): JSX.Element {
   // Transform topics into scatter data
   // X = engagement, Y = priority score, Z (size) = mention count
   const data = topics.slice(0, 10).map((topic, index) => ({
@@ -181,7 +188,7 @@ export function TopicBubble({ topics }: TopicBubbleProps) {
               style={{ backgroundColor: color }}
             />
             <span className="text-[9px] text-stone-600 font-body capitalize">
-              {key === "positive" ? "Love" : key === "negative" ? "Dislike" : key === "suggestion" ? "Suggestions" : "Neutral"}
+              {LEGEND_LABELS[key as keyof typeof COLORS]}
             </span>
           </div>
         ))}

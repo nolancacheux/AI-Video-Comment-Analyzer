@@ -20,7 +20,7 @@ interface ConfidenceHistogramProps {
 export function ConfidenceHistogram({
   distribution,
   avgConfidence = 0.85,
-}: ConfidenceHistogramProps) {
+}: ConfidenceHistogramProps): JSX.Element {
   // If no distribution provided, simulate one based on avg confidence
   const bins = distribution || generateDistribution(avgConfidence);
 

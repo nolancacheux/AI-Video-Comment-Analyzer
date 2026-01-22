@@ -13,7 +13,7 @@ import { useAnalysis } from "@/hooks/useAnalysis";
 import { getAnalysisHistory, deleteAnalysis, searchVideos } from "@/lib/api";
 import type { AnalysisHistoryItem, SearchResult } from "@/types";
 
-export default function Home() {
+export default function Home(): JSX.Element {
   const router = useRouter();
   const {
     isAnalyzing,

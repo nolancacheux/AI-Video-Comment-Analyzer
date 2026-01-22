@@ -62,7 +62,11 @@ const PRIORITY_CONFIG = {
   low: { bg: "bg-stone-100", text: "text-stone-600", label: "Low" },
 };
 
-export function TopicCard({ topic, isSelected, onClick }: TopicCardProps) {
+export function TopicCard({
+  topic,
+  isSelected,
+  onClick,
+}: TopicCardProps): JSX.Element {
   const sentiment = topic.sentiment_category || "neutral";
   const config = SENTIMENT_CONFIG[sentiment];
   const Icon = config.icon;

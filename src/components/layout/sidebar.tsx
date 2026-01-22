@@ -46,7 +46,7 @@ export function Sidebar({
   onDeleteHistory,
   selectedId,
   isAnalyzing,
-}: SidebarProps) {
+}: SidebarProps): JSX.Element {
   const [collapsed, setCollapsed] = React.useState(false);
   const [width, setWidth] = React.useState(DEFAULT_WIDTH);
   const [isResizing, setIsResizing] = React.useState(false);

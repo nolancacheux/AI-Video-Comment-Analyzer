@@ -24,7 +24,7 @@ export function MLInfoPanel({
   currentBatch = 0,
   totalBatches = 0,
   processingTimeSeconds = 0,
-}: MLInfoPanelProps) {
+}: MLInfoPanelProps): JSX.Element {
   const formatModelName = (name: string) => {
     // Show only the model name part for readability
     const parts = name.split("/");

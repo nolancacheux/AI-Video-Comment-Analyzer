@@ -12,7 +12,12 @@ interface UrlInputProps {
   className?: string;
 }
 
-export function UrlInput({ onValidUrl, onSearch, disabled, className }: UrlInputProps) {
+export function UrlInput({
+  onValidUrl,
+  onSearch,
+  disabled,
+  className,
+}: UrlInputProps): JSX.Element {
   const [url, setUrl] = useState("");
   const [isValid, setIsValid] = useState<boolean | null>(null);
   const [videoId, setVideoId] = useState<string | null>(null);

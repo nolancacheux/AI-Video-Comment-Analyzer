@@ -29,7 +29,7 @@ const LABELS = {
   neutral: "Neutral",
 };
 
-export function SentimentPie({ sentiment }: SentimentPieProps) {
+export function SentimentPie({ sentiment }: SentimentPieProps): JSX.Element {
   const data = [
     {
       name: LABELS.positive,

@@ -10,7 +10,10 @@ interface EvidenceStripProps {
   className?: string;
 }
 
-export function EvidenceStrip({ comments, className }: EvidenceStripProps) {
+export function EvidenceStrip({
+  comments,
+  className,
+}: EvidenceStripProps): JSX.Element | null {
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   if (comments.length === 0) {

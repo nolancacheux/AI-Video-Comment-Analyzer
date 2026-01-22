@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, type ReactNode } from "react";
 import { useParams } from "next/navigation";
 import { ArrowUpDown, ThumbsUp, Percent, Clock } from "lucide-react";
 import { useAnalysisData } from "@/hooks/useAnalysisData";
@@ -13,13 +13,13 @@ import type { SentimentType, Comment, Topic } from "@/types";
 
 type SortBy = "likes" | "confidence" | "recent";
 
-const sortOptions: { value: SortBy; label: string; icon: React.ReactNode }[] = [
+const sortOptions: { value: SortBy; label: string; icon: ReactNode }[] = [
   { value: "likes", label: "Likes", icon: <ThumbsUp className="h-4 w-4" /> },
   { value: "confidence", label: "Confidence", icon: <Percent className="h-4 w-4" /> },
   { value: "recent", label: "Recent", icon: <Clock className="h-4 w-4" /> },
 ];
 
-export default function CommentsPage() {
+export default function CommentsPage(): JSX.Element {
   const params = useParams();
   const analysisId = params.id ? parseInt(params.id as string, 10) : undefined;
 

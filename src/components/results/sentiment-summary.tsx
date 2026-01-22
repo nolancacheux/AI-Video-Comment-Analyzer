@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import type { Topic, Comment, SentimentType, SentimentSummaryText } from "@/types";
 import { Heart, ThumbsDown, Lightbulb, Sparkles, ChevronDown, ChevronUp, ThumbsUp, Percent, Clock } from "lucide-react";
@@ -19,7 +19,7 @@ interface SentimentSectionProps {
 
 const sentimentConfig: Record<SentimentType, {
   title: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   bgColor: string;
   borderColor: string;
   textColor: string;
@@ -94,7 +94,7 @@ export function SentimentSection({
   comments,
   onTopicClick,
   maxComments = 5,
-}: SentimentSectionProps) {
+}: SentimentSectionProps): JSX.Element | null {
   const [expanded, setExpanded] = useState(false);
   const [sortBy, setSortBy] = useState<SortBy>("likes");
   const [summaryExpanded, setSummaryExpanded] = useState(false);

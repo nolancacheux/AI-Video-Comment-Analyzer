@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Heart, AlertTriangle, Lightbulb, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SentimentType } from "@/types";
@@ -19,7 +20,7 @@ interface SentimentFilterProps {
 const filterOptions: {
   value: SentimentType | "all";
   label: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   color: string;
   activeColor: string;
 }[] = [
@@ -65,17 +66,17 @@ export function SentimentFilter({
   onSelect,
   counts,
   className,
-}: SentimentFilterProps) {
+}: SentimentFilterProps): JSX.Element {
   return (
     <div className={cn("flex items-center gap-2", className)}>
       {filterOptions.map((option) => {
         const isActive = selected === option.value;
-        const count =
-          option.value === "all"
-            ? counts
-              ? counts.positive + counts.negative + counts.suggestion + counts.neutral
-              : undefined
-            : counts?.[option.value as SentimentType];
+        let count: number | undefined;
+        if (option.value === "all" && counts) {
+          count = counts.positive + counts.negative + counts.suggestion + counts.neutral;
+        } else if (counts) {
+          count = counts[option.value as SentimentType];
+        }
 
         return (
           <button

@@ -8,7 +8,7 @@ import { EngagementBar } from "@/components/charts/engagement-bar";
 import { TopicBubble } from "@/components/charts/topic-bubble";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function ChartsPage() {
+export default function ChartsPage(): JSX.Element {
   const params = useParams();
   const analysisId = params.id ? parseInt(params.id as string, 10) : undefined;
 

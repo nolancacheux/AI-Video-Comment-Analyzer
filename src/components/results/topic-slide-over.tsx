@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import type { Topic, Comment, SentimentType } from "@/types";
 import {
@@ -19,7 +20,7 @@ interface TopicSlideOverProps {
 }
 
 const sentimentConfig: Record<SentimentType, {
-  icon: React.ReactNode;
+  icon: ReactNode;
   bgColor: string;
   textColor: string;
 }> = {
@@ -45,21 +46,21 @@ const sentimentConfig: Record<SentimentType, {
   },
 };
 
-function highlightPhrase(text: string, phrase: string): React.ReactNode {
+function highlightPhrase(text: string, phrase: string): ReactNode {
   if (!phrase) return text;
 
   // Split phrase into words for flexible matching
-  const words = phrase.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+  const words = phrase.toLowerCase().split(/\s+/).filter((word) => word.length > 2);
   if (words.length === 0) return text;
 
   // Create a regex pattern that matches any of the words
   const pattern = new RegExp(`(${words.join("|")})`, "gi");
   const parts = text.split(pattern);
 
-  return parts.map((part, i) => {
-    if (words.some(w => part.toLowerCase() === w)) {
+  return parts.map((part, index) => {
+    if (words.some((word) => part.toLowerCase() === word)) {
       return (
-        <mark key={i} className="bg-amber-200 px-0.5 rounded">
+        <mark key={index} className="bg-amber-200 px-0.5 rounded">
           {part}
         </mark>
       );
@@ -68,15 +69,28 @@ function highlightPhrase(text: string, phrase: string): React.ReactNode {
   });
 }
 
-export function TopicSlideOver({ topic, comments, open, onOpenChange }: TopicSlideOverProps) {
+function getLikeCountClass(likeCount: number): string {
+  if (likeCount >= 100) {
+    return "text-amber-600 font-medium";
+  }
+  if (likeCount >= 10) {
+    return "text-stone-600";
+  }
+  return "text-stone-400";
+}
+
+export function TopicSlideOver({
+  topic,
+  comments,
+  open,
+  onOpenChange,
+}: TopicSlideOverProps): JSX.Element | null {
   if (!topic) return null;
 
   const config = sentimentConfig[topic.sentiment_category];
 
   // Filter comments that belong to this topic
-  const topicComments = comments.filter(c =>
-    topic.comment_ids?.includes(c.id)
-  );
+  const topicComments = comments.filter((comment) => topic.comment_ids?.includes(comment.id));
 
   // Sort by likes
   const sortedComments = [...topicComments].sort((a, b) => b.like_count - a.like_count);
@@ -139,12 +153,7 @@ export function TopicSlideOver({ topic, comments, open, onOpenChange }: TopicSli
                 </div>
 
                 <div className="flex items-center gap-3 mt-3">
-                  <div className={cn(
-                    "flex items-center gap-1 text-xs",
-                    comment.like_count >= 100 ? "text-amber-600 font-medium" :
-                    comment.like_count >= 10 ? "text-stone-600" :
-                    "text-stone-400"
-                  )}>
+                  <div className={cn("flex items-center gap-1 text-xs", getLikeCountClass(comment.like_count))}>
                     <ThumbsUp className="h-3 w-3" />
                     {comment.like_count.toLocaleString()}
                   </div>

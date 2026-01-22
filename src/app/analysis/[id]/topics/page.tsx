@@ -43,7 +43,7 @@ const sentimentConfig = {
   },
 };
 
-export default function TopicsPage() {
+export default function TopicsPage(): JSX.Element {
   const params = useParams();
   const analysisId = params.id ? parseInt(params.id as string, 10) : undefined;
 
