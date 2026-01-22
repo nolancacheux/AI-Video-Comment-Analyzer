@@ -31,11 +31,10 @@
   --radius-lg: 1rem;
   --radius-xl: 1.25rem;
 
-  /* Typography - Editorial fonts */
-  --font-display: var(--font-display);
-  --font-body: var(--font-body);
+  /* Typography - Inter font system */
+  --font-inter: var(--font-inter);
   --font-mono: var(--font-mono);
-  --font-sans: var(--font-body);
+  --font-sans: var(--font-inter);
 
   /* Shadows - warm tones */
   --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.05);
@@ -113,7 +112,7 @@
   body {
     background-color: var(--background);
     color: var(--foreground);
-    font-family: var(--font-body), system-ui, sans-serif;
+    font-family: var(--font-inter), system-ui, sans-serif;
     font-weight: 400;
     line-height: 1.6;
   }
@@ -132,8 +131,8 @@
 
   /* Typography hierarchy */
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-display), Georgia, serif;
-    font-weight: 700;
+    font-family: var(--font-inter), system-ui, sans-serif;
+    font-weight: 600;
     letter-spacing: -0.02em;
     line-height: 1.2;
   }
@@ -174,14 +173,9 @@
 
 /* Utility classes */
 @layer utilities {
-  /* Display font for headlines and big numbers */
-  .font-display {
-    font-family: var(--font-display), Georgia, serif;
-  }
-
-  /* Body font for text */
-  .font-body {
-    font-family: var(--font-body), system-ui, sans-serif;
+  /* Inter font utility */
+  .font-inter {
+    font-family: var(--font-inter), system-ui, sans-serif;
   }
 
   /* Editorial small caps */
