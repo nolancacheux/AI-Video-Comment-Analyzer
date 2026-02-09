@@ -8,6 +8,12 @@
   <img src="demo/demo.gif" alt="Demo" width="700">
 </p>
 
+## Architecture
+
+<p align="center">
+  <img src="demo/architecture.svg" alt="Architecture" width="900">
+</p>
+
 ## Features
 
 - **Comment Extraction**: Fetch up to a configurable comment limit per video using yt-dlp (default 100)
